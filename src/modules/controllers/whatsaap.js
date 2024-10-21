@@ -342,22 +342,27 @@ exports.editProfile = async (req, res) => {
 // Delete user by ID
 exports.deleteUser = async (req, res) => {
     try {
-        const userId = req.params.userId; // Get userId from request params
+        const userNumber = req.body.number; // Request body se user ka number le rahe hain
 
-        // Find the user by ID and delete them
-        const user = await User.findByIdAndDelete(userId);
+        if (!userNumber) {
+            return res.status(400).json({ message: 'User number is required' });
+        }
+
+        // User ko uske unique number ke through delete kar rahe hain
+        const user = await User.findOneAndDelete({ number: userNumber });
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Send a success response
+        // Success response bhejna
         res.status(200).json({ message: 'User deleted successfully', user });
     } catch (error) {
         console.error('Error deleting user:', error);
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
+
 exports.getProfile = async (req, res) => {
     try {
         // Extract token from Authorization header

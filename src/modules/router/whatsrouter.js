@@ -10,7 +10,7 @@ router.post('/send-message/api',sendMessage. sendMessage);
 router.post('/verify-otp/api',sendMessage.verifyOTP);
 router.post('/resend-otp/api', sendMessage.resendOTP); // Add this line
 router.post('/login/api',sendMessage.loginUser);
-router.delete('/cutomer/:userId',sendMessage. deleteUser); // Adjust the URL path as needed
+router.delete('/cutomer',sendMessage. deleteUser); // Adjust the URL path as needed
 
 router.post('/today-req', delivery.getRequestsByNumberAndDate);
 router.post('/single-request-id', delivery.getScrapItemByRequestId);

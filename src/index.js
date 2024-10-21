@@ -40,7 +40,8 @@ server.listen(runPORT, () => {
  
  const whatsapp=require('./modules/router/whatsrouter');
  app.use(whatsapp);
-
+ const contact=require('./modules/router/ContactRouter');
+ app.use(contact);
  const admin=require('./modules/router/AdminRouter');
  app.use(admin);
  const wholeseler=require('./modules/router/WholeselerRouter');
