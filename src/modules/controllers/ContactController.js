@@ -6,26 +6,26 @@ const createFeedback = async (req, res) => {
     const { name, email, phoneNumber, message, rating, reasonForRating, updateFromUs } = req.body;
 
     // Validate required fields
-    if (!name || !email || !phoneNumber || !message ) {
-      return res.status(400).json({ message: 'All fields are required.' });
+    if (!name || !email || !phoneNumber || !message) {
+      return res.status(400).json({ message: 'All required fields must be provided.' });
     }
 
-    // Create a new feedback entry
+    // Create a new feedback entry with optional fields
     const newFeedback = new Feedback({
       name,
       email,
       phoneNumber,
       message,
-      rating,
-      reasonForRating,
-      updateFromUs
+      rating: rating || null, // Optional field, defaults to null if not provided
+      reasonForRating: reasonForRating || '', // Optional field, defaults to empty string if not provided
+      updateFromUs: updateFromUs || false, // Optional field, defaults to false if not provided
     });
 
     // Save to database
     await newFeedback.save();
 
     res.status(201).json({
-      message: 'Contact us  submitted successfully',
+      message: 'Contact us submitted successfully',
       data: newFeedback,
     });
   } catch (error) {
@@ -36,6 +36,7 @@ const createFeedback = async (req, res) => {
     });
   }
 };
+
 
 // Get All Feedback
 const getAllFeedback = async (req, res) => {

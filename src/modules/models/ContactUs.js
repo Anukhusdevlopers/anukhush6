@@ -20,20 +20,21 @@ const feedbackSchema = new mongoose.Schema({
   },
   rating: {
     type: Number,
-    required: true,
+    required: false, // Optional
     min: 1,
-    max: 5, // Rating should be between 1 and 5
+    max: 5, // Rating between 1 and 5
   },
   reasonForRating: {
     type: String,
-    required: true,
+    required: false, // Optional
   },
   updateFromUs: {
-    type: String,
-    required: true,
+    type: Boolean, // Boolean type instead of String
+    required: false, // Optional
+    default: false, // Defaults to false
   },
 }, {
-  timestamps: true, // Automatically adds createdAt and updatedAt fields
+  timestamps: true, // Automatically adds createdAt and updatedAt
 });
 
-module.exports = mongoose.model('ConatactUs', feedbackSchema);
+module.exports = mongoose.model('ContactUs', feedbackSchema); // Fix the typo
