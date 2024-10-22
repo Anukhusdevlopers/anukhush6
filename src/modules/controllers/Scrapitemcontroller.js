@@ -1,6 +1,6 @@
 // controllers/scrapItemController.js
 const ScrapItem = require('../models/Scraplist'); // Ensure the correct model name
-
+const User=require('../models/AnuUser')
 // Create Scrap Item
 const { v4: uuidv4 } = require('uuid'); // Import the uuid library
 
@@ -173,8 +173,34 @@ const getRequestsByAuthTokenAndRole = async (req, res) => {
 };
 
   
+// Controller to fetch all scrap requests for all users
+const getAllScrapRequests = async (req, res) => {
+  try {
+    console.log('Fetching all scrap requests');
+
+    // Fetch all scrap requests from the database
+    const allScrapRequests = await User.find({});
+
+    if (!allScrapRequests || allScrapRequests.length === 0) {
+      return res.status(404).json({
+        message: 'No scrap requests found.',
+      });
+    }
+
+    res.status(200).json({
+      message: 'Fetched all scrap requests successfully.',
+      data: allScrapRequests,
+    });
+  } catch (error) {
+    console.error('Error fetching all scrap requests:', error);
+    res.status(500).json({
+      message: 'Error fetching all scrap requests',
+      error: error.message,
+    });
+  }
+};
 
   
   
 
-module.exports = { createScrapItem ,getRequestsByAuthTokenAndRole,getRequestById};
+module.exports = { createScrapItem ,getRequestsByAuthTokenAndRole,getRequestById,getAllScrapRequests};

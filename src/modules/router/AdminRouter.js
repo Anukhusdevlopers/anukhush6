@@ -6,7 +6,7 @@ const { registerAdmin, loginAdmin ,getAllAdmins} = require('../controllers/Admin
 router.post('/register', registerAdmin);
 
 // Admin login
-router.post('/login', loginAdmin);
+router.post('/admin/login', loginAdmin);
 router.get('/admins', getAllAdmins);
 
 module.exports = router;
