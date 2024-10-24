@@ -4,7 +4,7 @@ const { assignWholesaler, getWholesalersByAdmin,WholesalerLogin, verifyOTP} = re
 
 
 
-const { assignDeliveryBoy, getDeliveryBoysByWholesaler,deliveryboyLogin,verifyOTPDeliveryboy } = require('../controllers/DeliveryboyController');
+const { assignDeliveryBoy, getDeliveryBoysByWholesaler,deliveryboyLogin,verifyOTPDeliveryboy ,getDeliveryBoysByWholesalerId} = require('../controllers/DeliveryboyController');
 
 // Assign a Delivery Boy by Wholesaler
 router.post('/delivery/assign', assignDeliveryBoy);
@@ -14,6 +14,7 @@ router.post('/wholesaler/login', WholesalerLogin);
 // Route to verify the OTP
 router.post('/wholesaler/verify-otp', verifyOTP);
 router.post('/deliveryboy/login', deliveryboyLogin);
+router.get('/delivery-boy-bywholeselerid/:id', getDeliveryBoysByWholesalerId);
 
 // Route to verify the OTP
 router.post('/deliveryboy/verify-otp', verifyOTPDeliveryboy);

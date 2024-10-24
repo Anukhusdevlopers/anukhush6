@@ -22,12 +22,22 @@ const OTP_EXPIRATION_TIME = 60 * 60 * 1000; // 1 hour in milliseconds
 // Assign Delivery Boy by Wholesaler
 // Assign Delivery Boy by Wholesaler
 exports.assignDeliveryBoy = async (req, res) => {
-    const { name, address, email, aadharNo, panNo, vehicleType, licenseNo, number, assignedBy } = req.body;
-  
-    try {
-      const deliveryBoy = new DeliveryBoy({
+  const { name, addresses, email, aadharNo, panNo, vehicleType, licenseNo, number, assignedBy } = req.body;
+
+  try {
+    // Check if the number of addresses exceeds the limit
+    if (addresses.length > 5) {
+      return res.status(400).json({ error: "A delivery boy can have at most 5 addresses." });
+    }
+
+    // Fetch existing delivery boy or create a new one
+    let deliveryBoy = await DeliveryBoy.findOne({ email}); // Assuming email is unique
+
+    if (!deliveryBoy) {
+      // Directly use addresses as an array of strings
+      deliveryBoy = new DeliveryBoy({
         name,
-        address,
+        address: addresses, // Store as an array of strings
         email,
         aadharNo,
         panNo,
@@ -36,21 +46,47 @@ exports.assignDeliveryBoy = async (req, res) => {
         number,
         assignedBy
       });
-  
-      await deliveryBoy.save();
-  
-      // Generate JWT Token
-      const token = jwt.sign({ id: deliveryBoy._id, role: 'wholesaler' }, 'your_secret_key', { expiresIn: '1h' });
-  
-      res.status(201).json({ 
-        message: "Delivery Boy assigned successfully", 
-        deliveryBoy,
-        token // Include the token in the response
-      });
-    } catch (error) {
-      res.status(400).json({ error: error.message });
+    } else {
+      // If the delivery boy already exists, update the addresses
+      // Combine existing addresses and new ones without exceeding the limit
+      const combinedAddresses = [...new Set([...deliveryBoy.address, ...addresses])]; // Combine and remove duplicates
+      if (combinedAddresses.length > 5) {
+        return res.status(400).json({ error: "A delivery boy can have at most 5 addresses." });
+      }
+      deliveryBoy.address = combinedAddresses; // Update the addresses
     }
-  };
+
+    await deliveryBoy.save();
+
+    // Generate JWT Token
+    const token = jwt.sign({ id: deliveryBoy._id, role: 'wholesaler' }, 'your_secret_key', { expiresIn: '1h' });
+
+    res.status(201).json({
+      message: "Delivery Boy assigned successfully",
+      deliveryBoy: {
+        ...deliveryBoy.toObject(), // Convert to plain object
+        address: deliveryBoy.address, // Ensure address is in the correct format
+      },
+      token // Include the token in the response
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+exports.getDeliveryBoysByWholesalerId = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const deliveryBoys = await DeliveryBoy.find({ assignedBy: id }); // Find delivery boys by wholesaler ID
+
+    res.status(200).json({
+      count: deliveryBoys.length, // Count of delivery boys
+      deliveryBoys // Delivery boys array
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
   exports.deliveryboyLogin = async (req, res) => {
     const { name, number } = req.body;
   
@@ -63,7 +99,7 @@ exports.assignDeliveryBoy = async (req, res) => {
         const wholesaler = await DeliveryBoy.findOne({  number });
   
         if (!wholesaler) {
-            return res.status(404).json({ message: 'Wholesaler not found' });
+            return res.status(404).json({ message: 'delivery not found' });
         }
   
         // Generate and store OTP
@@ -99,7 +135,7 @@ exports.assignDeliveryBoy = async (req, res) => {
         }
   
     } catch (error) {
-        console.error('Error during wholesaler login:', error);
+        console.error('Error during delivery login:', error);
         return res.status(500).json({ error: 'Internal server error' });
     }
   };
