@@ -8,7 +8,7 @@ const deliveryBoySchema = new mongoose.Schema({
   panNo: { type: String, required: true, unique: true },
   vehicleType: { type: String, required: true },
   licenseNo: { type: String, required: true },
-  phoneNumber: { type: String, required: true },
+  number: { type: String, required: true },
   assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Wholesaler' }, // Reference to Wholesaler
 }, { timestamps: true });
 

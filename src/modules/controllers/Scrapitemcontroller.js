@@ -199,8 +199,33 @@ const getAllScrapRequests = async (req, res) => {
     });
   }
 };
+const getAllScrap = async (req, res) => {
+  try {
+    console.log('Fetching all scrap requests');
+
+    // Fetch all scrap requests from the database
+    const allScrapRequests = await ScrapItem.find({});
+
+    if (!allScrapRequests || allScrapRequests.length === 0) {
+      return res.status(404).json({
+        message: 'No scrap requests found.',
+      });
+    }
+
+    res.status(200).json({
+      message: 'Fetched all scrap requests successfully.',
+      data: allScrapRequests,
+    });
+  } catch (error) {
+    console.error('Error fetching all scrap requests:', error);
+    res.status(500).json({
+      message: 'Error fetching all scrap requests',
+      error: error.message,
+    });
+  }
+};
 
   
   
 
-module.exports = { createScrapItem ,getRequestsByAuthTokenAndRole,getRequestById,getAllScrapRequests};
+module.exports = { createScrapItem ,getRequestsByAuthTokenAndRole,getRequestById,getAllScrapRequests,getAllScrap};

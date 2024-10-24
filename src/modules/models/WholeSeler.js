@@ -7,7 +7,7 @@ const wholesalerSchema = new mongoose.Schema({
   aadharNo: { type: String, required: true, unique: true },
   panNo: { type: String, required: true, unique: true },
   turnover: { type: Number, required: true },
-  phoneNumber: { type: String, required: true },
+  number: { type: String, required: true },
   assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' }, // Reference to Admin
 }, { timestamps: true });
 
