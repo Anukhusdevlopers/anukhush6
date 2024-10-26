@@ -63,52 +63,57 @@ exports.WholesalerLogin = async (req, res) => {
   const { name, number } = req.body;
 
   if (!name || !number) {
-      return res.status(400).json({ error: 'Name and number are required' });
+    return res.status(400).json({ error: 'Name and number are required' });
   }
 
   try {
-      // Check if the wholesaler exists by name and number
-      const wholesaler = await Wholesaler.findOne({  number });
+    // Check if the wholesaler exists by number
+    const wholesaler = await Wholesaler.findOne({ number });
 
-      if (!wholesaler) {
-          return res.status(404).json({ message: 'Wholesaler not found' });
-      }
+    if (!wholesaler) {
+      return res.status(404).json({ message: 'Wholesaler not found' });
+    }
 
-      // Generate and store OTP
-      const otp = generateOTP();
-      const expirationTime = Date.now() + OTP_EXPIRATION_TIME;
-      otpStore[number] = { otp, expirationTime };
+    // Generate and store OTP
+    const otp = generateOTP();
+    const expirationTime = Date.now() + OTP_EXPIRATION_TIME;
+    otpStore[number] = { otp, expirationTime };
 
-      // Prepare and send the OTP message
-      const fullMessage = `${DEFAULT_MESSAGE} Your OTP is: ${otp}`;
-      const requestPayload = {
-          api_key: API_KEY,
-          sender: SENDER_NUMBER,
-          number,
-          message: fullMessage,
-      };
+    // Prepare and send the OTP message
+    const fullMessage = `${DEFAULT_MESSAGE} Your OTP is: ${otp}`;
+    const requestPayload = {
+      api_key: API_KEY,
+      sender: SENDER_NUMBER,
+      number,
+      message: fullMessage,
+    };
 
-      // Send OTP via WhatsApp API
-      const response = await axios.post(API_URL, requestPayload, {
-          httpsAgent: new (require('https').Agent)({ rejectUnauthorized: false }),
+    // Send OTP via WhatsApp API
+    const response = await axios.post(API_URL, requestPayload, {
+      httpsAgent: new (require('https').Agent)({ rejectUnauthorized: false }),
+    });
+
+    if (response.status === 200 && response.data.status === true) {
+      return res.status(200).json({
+        success: true,
+        message: 'OTP sent successfully',
+        wholesaler: {
+          id: wholesaler._id,
+          name: wholesaler.name,
+          number: wholesaler.number,
+          // Include any other wholesaler details you need here
+        },
+        otp, // For testing, remove this in production
       });
-
-      if (response.status === 200 && response.data.status === true) {
-          return res.status(200).json({
-              success: true,
-              message: 'OTP sent successfully',
-              otp, // For testing, remove this in production
-          });
-      } else {
-          return res.status(response.status).json({
-              success: false,
-              error: 'Failed to send OTP',
-          });
-      }
-
+    } else {
+      return res.status(response.status).json({
+        success: false,
+        error: 'Failed to send OTP',
+      });
+    }
   } catch (error) {
-      console.error('Error during wholesaler login:', error);
-      return res.status(500).json({ error: 'Internal server error' });
+    console.error('Error during wholesaler login:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
 
