@@ -185,3 +185,62 @@ exports.getDeliveryBoysByWholesaler = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+exports.deactivateDeliveryBoy = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Find the delivery boy by ID and set isActive to false
+    const deliveryBoy = await DeliveryBoy.findByIdAndUpdate(
+      id,
+      { isActive: false },
+      { new: true }
+    );
+
+    if (!deliveryBoy) {
+      return res.status(404).json({ success: false, message: 'Delivery boy not found' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Delivery boy deactivated successfully',
+      deliveryBoy,
+    });
+  } catch (error) {
+    console.error('Error deactivating delivery boy:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+
+// controllers/deliveryBoyController.js
+
+
+exports.updateDeliveryBoyAddress = async (req, res) => {
+  const { id } = req.params;
+  const { address } = req.body;
+
+  if (!address || !Array.isArray(address)) {
+    return res.status(400).json({ success: false, message: 'Address must be a non-empty array of strings' });
+  }
+
+  try {
+    // Update only the address field
+    const updatedDeliveryBoy = await DeliveryBoy.findByIdAndUpdate(
+      id,
+      { address },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedDeliveryBoy) {
+      return res.status(404).json({ success: false, message: 'Delivery boy not found' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Address updated successfully',
+      deliveryBoy: updatedDeliveryBoy, // Return updated document
+    });
+  } catch (error) {
+    console.error('Error updating delivery boy address:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};

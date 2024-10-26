@@ -8,6 +8,10 @@ const wholesalerSchema = new mongoose.Schema({
   panNo: { type: String, required: true, unique: true },
   turnover: { type: Number, required: true },
   number: { type: String, required: true },
+  isActive: {
+    type: Boolean,
+    default: true, // By default, a new delivery boy is active
+  },
   assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' }, // Reference to Admin
 }, { timestamps: true });
 

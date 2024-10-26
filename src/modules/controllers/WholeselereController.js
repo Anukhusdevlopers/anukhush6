@@ -163,3 +163,52 @@ exports.getWholesalersByAdmin = async (req, res) => {
     }
 
 };
+exports.deactivateWholeseler = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Find the delivery boy by ID and set isActive to false
+    const wholesaler = await Wholesaler.findByIdAndUpdate(
+      id,
+      { isActive: false },
+      { new: true }
+    );
+
+    if (!wholesaler) {
+      return res.status(404).json({ success: false, message: 'wholesaler not found' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'wholesaler deactivated successfully',
+      wholesaler,
+    });
+  } catch (error) {
+    console.error('Error deactivating delivery boy:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+exports.getTodaysWholesalers = async (req, res) => {
+  try {
+    // Get the start and end times for today's date
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Find wholesalers created within today's date range
+    const wholesalers = await Wholesaler.find({
+      createdAt: { $gte: startOfDay, $lte: endOfDay },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Wholesalers registered today fetched successfully',
+      wholesalers, // All data of each wholesaler will be included here
+    });
+  } catch (error) {
+    console.error('Error fetching today’s wholesalers:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};

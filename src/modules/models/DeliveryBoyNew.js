@@ -10,6 +10,10 @@ const deliveryBoySchema = new mongoose.Schema({
   vehicleType: { type: String, required: true },
   licenseNo: { type: String, required: true },
   number: { type: String, required: true,unique: true },
+  isActive: {
+    type: Boolean,
+    default: true, // By default, a new delivery boy is active
+  },
   assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Wholesaler' }, // Reference to Wholesaler
 }, { timestamps: true });
 
