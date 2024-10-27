@@ -49,7 +49,8 @@ const createScrapItem = async (req, res) => {
       latitude: parseFloat(latitude),
       longitude: parseFloat(longitude),
       requestId: requestId ,
-      anuUser2: anuUser2Id // Add the AnuUser2 reference (ID)
+      anuUser2: anuUser2Id ,// Add the AnuUser2 reference (ID)
+      status: 'current' // Set the status as 'current'
 
     });
 
@@ -225,7 +226,30 @@ const getAllScrap = async (req, res) => {
   }
 };
 
+  // Get Requests by Status
+  const getRequestsByStatus = async (req, res) => {
+    const { status } = req.body; // Expecting status in the body
   
+    try {
+      // Validate the status
+      if (!status || (status !== 'current' && status !== 'previous')) {
+        return res.status(400).json({ error: "Invalid status. Must be 'current' or 'previous'." });
+      }
+  
+      // Fetch requests based on status
+      const requests = await ScrapItem.find({ status });
+  
+      // Check if requests are found
+      if (requests.length === 0) {
+        console.log(`No ${status} requests found.`);
+      }
+  
+      res.status(200).json(requests);
+    } catch (error) {
+      console.error("Error fetching requests:", error.message);
+      res.status(500).json({ error: error.message });
+    }
+  };
   
 
-module.exports = { createScrapItem ,getRequestsByAuthTokenAndRole,getRequestById,getAllScrapRequests,getAllScrap};
+module.exports = { createScrapItem ,getRequestsByAuthTokenAndRole,getRequestById,getAllScrapRequests,getAllScrap,getRequestsByStatus};
