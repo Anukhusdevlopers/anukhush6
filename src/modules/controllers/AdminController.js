@@ -50,11 +50,19 @@ exports.loginAdmin = async (req, res) => {
       return res.status(400).json({ error: "Invalid credentials" });
     }
 
-    res.status(200).json({ message: "Login successful", admin });
+    // Convert the admin object to JSON and remove the password field
+    const adminData = admin.toObject();
+    delete adminData.password;
+
+    res.status(200).json({ 
+      message: "Login successful", 
+      admin: adminData  // Send the admin data without the password
+    });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
+
 
 // Function to get all admins
 exports.getAllAdmins = async (req, res) => {

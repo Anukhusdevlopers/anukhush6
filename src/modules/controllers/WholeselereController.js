@@ -59,6 +59,21 @@ exports.assignWholesaler = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+exports.getwholeselerById = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const deliveryBoys = await Wholesaler.find({ assignedBy: id }); // Find delivery boys by adminid ID
+
+    res.status(200).json({
+      count: deliveryBoys.length, // Count of delivery boys
+      deliveryBoys // Delivery boys array
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 exports.WholesalerLogin = async (req, res) => {
   const { name, number } = req.body;
 
