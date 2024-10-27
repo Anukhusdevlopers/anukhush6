@@ -4,7 +4,7 @@ const { assignWholesaler, getWholesalersByAdmin,WholesalerLogin, verifyOTP,deact
 
 
 
-const { assignDeliveryBoy, getDeliveryBoysByWholesaler,deliveryboyLogin,verifyOTPDeliveryboy , updateDeliveryBoyAddress,deactivateDeliveryBoy,getDeliveryBoysByWholesalerId} = require('../controllers/DeliveryboyController');
+const { assignDeliveryBoy, getDeliveryBoysByWholesaler,deliveryboyLogin,verifyOTPDeliveryboy ,getRequestsByStatus, updateDeliveryBoyAddress,deactivateDeliveryBoy,getDeliveryBoysByWholesalerId} = require('../controllers/DeliveryboyController');
 
 // Assign a Delivery Boy by Wholesaler
 router.post('/delivery/assign', assignDeliveryBoy);
@@ -16,7 +16,9 @@ router.get('/wholeseler-byadminid/:id', getwholeselerById);
 // Route to verify the OTP
 router.post('/wholesaler/verify-otp', verifyOTP);
 router.post('/deliveryboy/login', deliveryboyLogin);
-router.get('/delivery-boy-bywholeselerid/:id', getDeliveryBoysByWholesalerId);
+router.post('/delivery-boy-status', getRequestsByStatus);
+
+router.get('/deactivate-deliveryboy-by-Id/:id', getDeliveryBoysByWholesalerId);
 router.patch('/deliveryboy/deactivate/:id', deactivateDeliveryBoy);
 router.patch('/wholeseler/deactivate/:id', deactivateWholeseler);
 // Route to verify the OTP

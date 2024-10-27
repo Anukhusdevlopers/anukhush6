@@ -31,7 +31,7 @@ exports.assignDeliveryBoy = async (req, res) => {
     }
 
     // Fetch existing delivery boy or create a new one
-    let deliveryBoy = await DeliveryBoy.findOne({ email}); // Assuming email is unique
+    let deliveryBoy = await DeliveryBoy.findOne({ email }); // Assuming email is unique
 
     if (!deliveryBoy) {
       // Directly use addresses as an array of strings
@@ -44,7 +44,8 @@ exports.assignDeliveryBoy = async (req, res) => {
         vehicleType,
         licenseNo,
         number,
-        assignedBy
+        assignedBy,
+        status: 'current' // Set the status as 'current'
       });
     } else {
       // If the delivery boy already exists, update the addresses
@@ -54,6 +55,7 @@ exports.assignDeliveryBoy = async (req, res) => {
         return res.status(400).json({ error: "A delivery boy can have at most 5 addresses." });
       }
       deliveryBoy.address = combinedAddresses; // Update the addresses
+      deliveryBoy.status = 'current'; // Set status to 'current' for updated assignment
     }
 
     await deliveryBoy.save();
@@ -73,15 +75,25 @@ exports.assignDeliveryBoy = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
 exports.getDeliveryBoysByWholesalerId = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; // delivery boy's ID
 
   try {
-    const deliveryBoys = await DeliveryBoy.find({ assignedBy: id }); // Find delivery boys by wholesaler ID
+    // Find and update the delivery boy's status to 'previous'
+    const updatedDeliveryBoy = await DeliveryBoy.findByIdAndUpdate(
+      id, // Use the delivery boy's ID
+      { status: 'previous' }, // Set status to 'previous'
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedDeliveryBoy) {
+      return res.status(404).json({ message: "Delivery Boy not found." });
+    }
 
     res.status(200).json({
-      count: deliveryBoys.length, // Count of delivery boys
-      deliveryBoys // Delivery boys array
+      message: "Delivery Boy deactivated successfully",
+      deliveryBoy: updatedDeliveryBoy
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -242,5 +254,28 @@ exports.updateDeliveryBoyAddress = async (req, res) => {
   } catch (error) {
     console.error('Error updating delivery boy address:', error);
     return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+};
+exports. getRequestsByStatus = async (req, res) => {
+  const { status } = req.body; // Expecting status in the body
+
+  try {
+    // Validate the status
+    if (!status || (status !== 'current' && status !== 'previous')) {
+      return res.status(400).json({ error: "Invalid status. Must be 'current' or 'previous'." });
+    }
+
+    // Fetch requests based on status
+    const requests = await DeliveryBoy.find({ status });
+
+    // Check if requests are found
+    if (requests.length === 0) {
+      console.log(`No ${status} requests found.`);
+    }
+
+    res.status(200).json(requests);
+  } catch (error) {
+    console.error("Error fetching requests:", error.message);
+    res.status(500).json({ error: error.message });
   }
 };

@@ -23,7 +23,7 @@ const ScrapItemSchema = new mongoose.Schema({
   longitude: { type: Number, } , // New field for longitude
   requestId: { type: String, required: true, unique: true }, // Ensure this is included
 
-  status: { type: String, enum: ['current', 'previous'], required: true },
+  
 
 
   // Reference to the AnuUser2 table
