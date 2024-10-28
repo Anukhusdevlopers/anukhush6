@@ -1,6 +1,7 @@
 const DeliveryBoy = require('../models/DeliveryBoyNew');
 const jwt = require('jsonwebtoken');
 const axios = require('axios'); // Add this line
+const mongoose = require('mongoose');
 
 // Use environment variables
 const API_URL = process.env.API_URL;
@@ -190,11 +191,21 @@ exports.getDeliveryBoysByWholesalerId = async (req, res) => {
   
 // Get all Delivery Boys assigned by Wholesaler
 exports.getDeliveryBoysByWholesaler = async (req, res) => {
+  const { wholesalerId } = req.params; // Expect wholesalerId as a URL parameter
+
   try {
-    const deliveryBoys = await DeliveryBoy.find();
+    // Find delivery boys assigned by this specific wholesaler
+    const deliveryBoys = await DeliveryBoy.find({ assignedBy: wholesalerId });
+
+    // Check if delivery boys are found
+    if (deliveryBoys.length === 0) {
+      return res.status(404).json({ message: "No delivery boys found for this wholesaler." });
+    }
+
     res.status(200).json({ deliveryBoys });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error("Error fetching delivery boys by wholesaler:", error);
+    res.status(500).json({ error: error.message });
   }
 };
 exports.deactivateDeliveryBoy = async (req, res) => {
@@ -277,5 +288,34 @@ exports. getRequestsByStatus = async (req, res) => {
   } catch (error) {
     console.error("Error fetching requests:", error.message);
     res.status(500).json({ error: error.message });
+  }
+};exports.getProfileDeliveryBoy = async (req, res) => {
+  try {
+      const token = req.header('Authorization')?.replace('Bearer ', '').trim();
+      console.log("Token received:", token); // Log the received token
+
+      if (!token) {
+          return res.status(401).json({ message: 'Authorization token required' });
+      }
+
+      const decoded = jwt.verify(token, JWT_SECRET);
+      const userId = decoded.userId;
+      console.log("Decoded User ID:", userId);
+
+      const user = await DeliveryBoy.findById(userId).select(
+          'name _id address email aadharNo panNo vehicleType licenseNo number assignedBy createdAt updatedAt'
+      );
+
+      if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+      }
+
+      return res.status(200).json(user);
+  } catch (error) {
+      console.error("Error retrieving profile:", error);
+      if (error.name === 'JsonWebTokenError') {
+          return res.status(401).json({ message: 'Invalid token', error: error.message });
+      }
+      res.status(500).json({ message: 'Error retrieving profile', error: error.message });
   }
 };
