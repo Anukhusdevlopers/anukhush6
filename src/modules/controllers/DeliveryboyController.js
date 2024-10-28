@@ -154,39 +154,67 @@ exports.getDeliveryBoysByWholesalerId = async (req, res) => {
   };
   
   // Verify OTP function (optional, for verification after OTP is received)
-  exports.verifyOTPDeliveryboy = (req, res) => {
+  exports.verifyOTPDeliveryboy = async (req, res) => {
     const { otp } = req.body;
   
-    // Check if OTP is provided
     if (!otp) {
-      return res.status(400).json({ error: 'OTP is required' });
+      return res.status(400).json({ message: 'OTP is required' });
     }
   
-    // Search for the OTP in the otpStore
-    let matchingNumber = null;
-    for (const number in otpStore) {
-      if (otpStore[number].otp === otp) {
-        matchingNumber = number;
-        break;
+    try {
+      // Retrieve the number from the stored OTP details
+      const userEntry = Object.entries(otpStore).find(([key, value]) => value.otp === otp);
+  
+      if (!userEntry) {
+        return res.status(400).json({ message: 'Invalid or expired OTP' });
       }
+  
+      const number = userEntry[0]; // Get the phone number from the entry
+  
+      // OTP verification successful, clear the OTP from the in-memory store
+      delete otpStore[number];
+      console.log(`OTP for ${number} cleared from memory after successful verification`);
+  
+      // Retrieve the user from the database
+      const user = await DeliveryBoy.findOne({ number: number });
+  
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+  
+      // Update the user's verified status
+      user.verified = true;
+      await user.save();
+  
+      // Generate a JWT token for the user
+      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  
+      // Return user details upon successful verification along with the token
+      return res.status(200).json({
+        message: 'Phone number verified successfully!',
+        user: {
+          id: user._id,
+          name: user.name,
+          address: user.address, // Assuming address is an array
+          email: user.email,
+          aadharNo: user.aadharNo,
+          panNo: user.panNo,
+          vehicleType: user.vehicleType,
+          licenseNo: user.licenseNo,
+          phoneNumber: user.number,
+          isActive: user.isActive,
+          assignedBy: user.assignedBy,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          verified: user.verified, // Include verified status
+          __v: user.__v
+        },
+        token
+      });
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      return res.status(500).json({ message: 'Error verifying OTP', details: error.message });
     }
-  
-    // If no matching OTP found
-    if (!matchingNumber) {
-      return res.status(400).json({ error: 'Invalid OTP' });
-    }
-  
-    const { expirationTime } = otpStore[matchingNumber];
-  
-    // Check if the OTP has expired
-    if (Date.now() > expirationTime) {
-      return res.status(400).json({ error: 'OTP has expired' });
-    }
-  
-    // OTP is valid, generate JWT token using the phone number (matchingNumber)
-    const token = jwt.sign({ id: matchingNumber }, JWT_SECRET, { expiresIn: '1h' });
-  
-    return res.status(200).json({ success: true, message: 'OTP verified', token });
   };
   
 // Get all Delivery Boys assigned by Wholesaler
@@ -289,7 +317,8 @@ exports. getRequestsByStatus = async (req, res) => {
     console.error("Error fetching requests:", error.message);
     res.status(500).json({ error: error.message });
   }
-};exports.getProfileDeliveryBoy = async (req, res) => {
+};
+exports.getProfileDeliveryBoy = async (req, res) => {
   try {
       const token = req.header('Authorization')?.replace('Bearer ', '').trim();
       console.log("Token received:", token); // Log the received token
