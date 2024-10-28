@@ -253,3 +253,34 @@ exports.getTodaysWholesalers = async (req, res) => {
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };
+
+exports.getProfileWholeseler = async (req, res) => {
+  try {
+      const token = req.header('Authorization')?.replace('Bearer ', '').trim();
+      console.log("Token received:", token);
+
+      if (!token) {
+          return res.status(401).json({ message: 'Authorization token required' });
+      }
+
+      const decoded = jwt.verify(token, JWT_SECRET);
+      const userId = decoded.userId;
+      console.log("Decoded User ID:", userId);
+
+      const user = await Wholesaler.findById(userId).select(
+          'name _id address email aadharNo panNo turnover phoneNumber assignedBy createdAt updatedAt'
+      );
+
+      if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+      }
+
+      return res.status(200).json(user);
+  } catch (error) {
+      console.error("Error retrieving profile:", error);
+      if (error.name === 'JsonWebTokenError') {
+          return res.status(401).json({ message: 'Invalid token', error: error.message });
+      }
+      res.status(500).json({ message: 'Error retrieving profile', error: error.message });
+  }
+};

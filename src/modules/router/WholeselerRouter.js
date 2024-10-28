@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { assignWholesaler, getWholesalersByAdmin,WholesalerLogin, verifyOTP,deactivateWholeseler,getwholeselerById,getTodaysWholesalers} = require('../controllers/WholeselereController');
+const { assignWholesaler, getWholesalersByAdmin,WholesalerLogin, verifyOTP,deactivateWholeseler,getwholeselerById,getProfileWholeseler,getTodaysWholesalers} = require('../controllers/WholeselereController');
 
 
 
@@ -13,6 +13,7 @@ router.post('/wholesaler/login', WholesalerLogin);
 router.get('/wholesalers/today', getTodaysWholesalers);
 router.put('/deliveryboy/edit-address/:id', updateDeliveryBoyAddress);
 router.get('/wholeseler-byadminid/:id', getwholeselerById);
+router.get('/user-profile-whole-seller',  getProfileWholeseler);
 // Route to verify the OTP
 router.post('/wholesaler/verify-otp', verifyOTP);
 router.post('/deliveryboy/login', deliveryboyLogin);
