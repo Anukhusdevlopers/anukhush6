@@ -24,7 +24,11 @@ const ScrapItemSchema = new mongoose.Schema({
   requestId: { type: String, required: true, unique: true }, // Ensure this is included
 
   
-
+status: {
+    type: String,
+    enum: ['completed', 'cancelled', 'upcoming', 'pending'],
+    default: 'upcoming', // or whichever status should be default
+  },
 
   // Reference to the AnuUser2 table
   anuUser2: { 

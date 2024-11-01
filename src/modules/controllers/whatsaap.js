@@ -377,31 +377,43 @@ exports.getProfile = async (req, res) => {
         const userId = decoded.userId;
 
         // Find the user by ID and select the fields accordingly
-        const user = await User.findById(userId).select('name _id number address role');
+        const user = await User.findById(userId).select('name _id number address role latitude longitude');
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Ensure address always returns in the response
-        const address = user.address ? user.address : 'No address provided';
-        const latitude = user.latitude ? user.latitude : 'No latitude provided';
-        const longitude = user.longitude ? user.longitude : 'No longitude provided';
-        // Send a response with user details
-        return res.status(200).json({
+        // Build response object with user details
+        const response = {
             name: user.name,
             id: user._id,
             number: user.number,
-            address: address,   // Ensuring address always exists
-            latitude: latitude,         // Include latitude
-            longitude: longitude,       // Include longitude
-            role: user.role
-        });
+            address: user.address || 'No address provided',
+            role: user.role,
+        };
+
+        // Add latitude and longitude only if they are present in the database
+        if (user.latitude) {
+            response.latitude = user.latitude;
+        } else {
+            response.latitude = 'Latitude is not available.';
+        }
+
+        if (user.longitude) {
+            response.longitude = user.longitude;
+        } else {
+            response.longitude = 'Longitude is not available.';
+        }
+
+        // Send the response with user details
+        return res.status(200).json(response);
 
     } catch (error) {
         res.status(500).json({ message: 'Error retrieving profile', error: error.message });
     }
 };
+
+
 exports.updateAddress = async (req, res) => {
     try {
         // Extract token from Authorization header
