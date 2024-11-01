@@ -149,7 +149,8 @@ exports.getRequestsByNumberAndDate1 = async (req, res) => {
       }
   
       // Find the ScrapItem by requestId and authToken
-      const scrapItem = await ScrapItem.findOne({ requestId, authToken });
+      const scrapItem = await ScrapItem.findOne({ requestId });
+
   
       if (!scrapItem) {
         return res.status(404).json({ message: "No scrap item found with the provided requestId." });
