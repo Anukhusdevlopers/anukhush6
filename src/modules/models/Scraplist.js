@@ -29,6 +29,7 @@ status: {
     enum: ['completed', 'cancelled', 'upcoming', 'pending'],
     default: 'upcoming', // or whichever status should be default
   },
+  paymentMode: { type: String, required: true }, // New field for payment mode
 
   // Reference to the AnuUser2 table
   anuUser2: { 

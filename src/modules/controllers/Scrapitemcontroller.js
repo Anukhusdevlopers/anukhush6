@@ -14,7 +14,7 @@ const createScrapItem = async (req, res) => {
       return res.status(401).json({ message: "Authorization token is required." });
     }
 
-    const { scrapItems, name, pickUpDate, pickUpTime, location, latitude, longitude, anuUser2Id } = req.body;
+    const { scrapItems, name, pickUpDate, pickUpTime, location, latitude, longitude, anuUser2Id ,paymentMode} = req.body;
 
     let parsedScrapItems;
     try {
@@ -50,6 +50,7 @@ const createScrapItem = async (req, res) => {
       longitude: longitude ? parseFloat(longitude) : null,
       requestId: requestId,
       anuUser2: anuUser2Id, // Add the AnuUser2 reference (ID)
+      paymentMode
     });
 
     // Save the new scrap item to the database
@@ -223,9 +224,33 @@ const getAllScrap = async (req, res) => {
     });
   }
 };
+const cancelScrapItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const scrapItem = await ScrapItem.findById(id);
 
+    if (!scrapItem) {
+      return res.status(404).json({ message: 'Scrap item not found.' });
+    }
+
+    scrapItem.status = 'cancelled'; 
+    await scrapItem.save();
+
+    res.status(200).json({
+      status: 200,
+      message: 'Scrap item request cancelled successfully.',
+      data: { requestId: scrapItem.requestId },
+    });
+  } catch (error) {
+    console.error("Error canceling scrap item:", error);
+    res.status(500).json({
+      message: 'Error canceling scrap item',
+      error: error.message || 'Internal server error',
+    });
+  }
+};
   // Get Requests by Status
  
   
 
-module.exports = { createScrapItem ,getRequestsByAuthTokenAndRole,getRequestById,getAllScrapRequests,getAllScrap};
+module.exports = { createScrapItem ,getRequestsByAuthTokenAndRole,getRequestById,getAllScrapRequests,getAllScrap,cancelScrapItem};
