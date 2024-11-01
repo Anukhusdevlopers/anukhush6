@@ -14,7 +14,7 @@ const createScrapItem = async (req, res) => {
       return res.status(401).json({ message: "Authorization token is required." });
     }
 
-    const { scrapItems, name, pickUpDate, pickUpTime, location, latitude, longitude ,anuUser2Id} = req.body;
+    const { scrapItems, name, pickUpDate, pickUpTime, location, latitude, longitude, anuUser2Id } = req.body;
 
     let parsedScrapItems;
     try {
@@ -39,19 +39,17 @@ const createScrapItem = async (req, res) => {
     // Create a new ScrapItem instance with the generated requestId
     const newScrapItem = new ScrapItem({
       authToken: authToken, // Setting the authToken from the header
-
       scrapItems: parsedScrapItems,
       name,
       image: req.file ? req.file.path : null,
       pickUpDate,
       pickUpTime,
       location,
-      latitude: parseFloat(latitude),
-      longitude: parseFloat(longitude),
-      requestId: requestId ,
-      anuUser2: anuUser2Id ,// Add the AnuUser2 reference (ID)
-    
-
+      // Set latitude and longitude only if they are provided; otherwise, set them to null
+      latitude: latitude ? parseFloat(latitude) : null,
+      longitude: longitude ? parseFloat(longitude) : null,
+      requestId: requestId,
+      anuUser2: anuUser2Id, // Add the AnuUser2 reference (ID)
     });
 
     // Save the new scrap item to the database
