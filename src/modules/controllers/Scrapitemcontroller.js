@@ -92,14 +92,19 @@ const getRequestsByAuthTokenAndRole = async (req, res) => {
       });
     }
 
-  
+    // Pagination parameters (with default values)
+    const page = parseInt(req.query.page) || 1; // Current page number, default is 1
+    const limit = parseInt(req.query.limit) || 10; // Items per page, default is 10
+    const skip = (page - 1) * limit;
 
-  
+    // Fetch the scrap items associated with the given userId and matching authToken with pagination
+    const scrapRequests = await ScrapItem.find({ anuUser2: userId })
+      .skip(skip)
+      .limit(limit);
 
-   
-
-    // Fetch the scrap items associated with the given userId and matching authToken
-    const scrapRequests = await ScrapItem.find({ anuUser2: userId});
+    // Count total documents for this query
+    const totalDocuments = await ScrapItem.countDocuments({ anuUser2: userId });
+    const totalPages = Math.ceil(totalDocuments / limit);
 
     if (!scrapRequests || scrapRequests.length === 0) {
       return res.status(404).json({
@@ -110,6 +115,12 @@ const getRequestsByAuthTokenAndRole = async (req, res) => {
     res.status(200).json({
       message: 'Fetched all requests successfully.',
       data: scrapRequests,
+      pagination: {
+        totalDocuments,
+        totalPages,
+        currentPage: page,
+        pageSize: scrapRequests.length,
+      },
     });
   } catch (error) {
     console.error('Error fetching requests by user ID:', error);
@@ -119,7 +130,6 @@ const getRequestsByAuthTokenAndRole = async (req, res) => {
     });
   }
 };
-
 
 
   // Controller to fetch a single scrap request by request ID
