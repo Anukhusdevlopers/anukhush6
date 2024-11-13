@@ -2,7 +2,8 @@ const Wholesaler = require('../models/WholeSeler');
 const jwt = require('jsonwebtoken');
 require('dotenv').config(); // Load environment variables
 const axios = require('axios'); // Add this line
-
+const User = require('../models/AnuUser');  // Customer model
+const DeliveryBoy = require('../models/DeliveryBoyNew');
 // Use environment variables
 const API_URL = process.env.API_URL;
 const API_KEY = process.env.API_KEY;
@@ -26,6 +27,17 @@ exports.assignWholesaler = async (req, res) => {
   const { name, address, email, aadharNo, panNo, turnover, number, assignedBy } = req.body;
 
   try {
+     // Check if the number exists in either the Customer (User) or Wholesaler model
+     const existingUser = await User.findOne({ number });
+     const existingWholesaler = await DeliveryBoy.findOne({ number });
+ 
+     if (existingUser) {
+       return res.status(400).json({ error: "This number is already registered as a customer" });
+     }
+ 
+     if (existingWholesaler) {
+       return res.status(400).json({ error: "This number is already registered as Deliveryboy" });
+     }
     // Create a new wholesaler instance
     const wholesaler = new Wholesaler({
       name,

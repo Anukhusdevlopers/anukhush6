@@ -11,6 +11,7 @@ const deliveryBoySchema = new mongoose.Schema({
   licenseNo: { type: String, required: true },
   number: { type: String, required: true,unique: true },
   status: { type: String, required: true, default: 'current' }, // Default to 'current'
+  location: { type: String, required: true } , // Add the location field here
 
   isActive: {
     type: Boolean,

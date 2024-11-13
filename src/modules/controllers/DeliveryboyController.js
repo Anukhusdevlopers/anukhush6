@@ -2,7 +2,8 @@ const DeliveryBoy = require('../models/DeliveryBoyNew');
 const jwt = require('jsonwebtoken');
 const axios = require('axios'); // Add this line
 const mongoose = require('mongoose');
-
+const User = require('../models/AnuUser');  // Customer model
+const Wholesaler = require('../models/WholeSeler');  // Wholesaler model
 // Use environment variables
 const API_URL = process.env.API_URL;
 const API_KEY = process.env.API_KEY;
@@ -23,9 +24,23 @@ const OTP_EXPIRATION_TIME = 60 * 60 * 1000; // 1 hour in milliseconds
 // Assign Delivery Boy by Wholesaler
 // Assign Delivery Boy by Wholesaler
 exports.assignDeliveryBoy = async (req, res) => {
-  const { name, addresses, email, aadharNo, panNo, vehicleType, licenseNo, number, assignedBy } = req.body;
-
+  const { name, addresses, email, aadharNo, panNo, vehicleType, licenseNo, number, assignedBy, location  } = req.body;
+ // Check if location is provided
+ if (!location) {
+  return res.status(400).json({ error: "Location is required." });
+}
   try {
+    // Check if the number exists in either the Customer (User) or Wholesaler model
+    const existingUser = await User.findOne({ number });
+    const existingWholesaler = await Wholesaler.findOne({ number });
+
+    if (existingUser) {
+      return res.status(400).json({ error: "This number is already registered as a customer" });
+    }
+
+    if (existingWholesaler) {
+      return res.status(400).json({ error: "This number is already registered as Wholesaler" });
+    }
     // Check if the number of addresses exceeds the limit
     if (addresses.length > 5) {
       return res.status(400).json({ error: "A delivery boy can have at most 5 addresses." });
@@ -42,6 +57,8 @@ exports.assignDeliveryBoy = async (req, res) => {
         email,
         aadharNo,
         panNo,
+        location,  // Store the location field
+
         vehicleType,
         licenseNo,
         number,
@@ -56,6 +73,8 @@ exports.assignDeliveryBoy = async (req, res) => {
         return res.status(400).json({ error: "A delivery boy can have at most 5 addresses." });
       }
       deliveryBoy.address = combinedAddresses; // Update the addresses
+      deliveryBoy.location = location; // Update location
+
       deliveryBoy.status = 'current'; // Set status to 'current' for updated assignment
     }
 
@@ -69,6 +88,8 @@ exports.assignDeliveryBoy = async (req, res) => {
       deliveryBoy: {
         ...deliveryBoy.toObject(), // Convert to plain object
         address: deliveryBoy.address, // Ensure address is in the correct format
+        location: deliveryBoy.location // Ensure location is included
+
       },
       token // Include the token in the response
     });
@@ -346,5 +367,25 @@ exports.getProfileDeliveryBoy = async (req, res) => {
           return res.status(401).json({ message: 'Invalid token', error: error.message });
       }
       res.status(500).json({ message: 'Error retrieving profile', error: error.message });
+  }
+};
+// Get all delivery boys without filtering by status
+exports.getAllDeliveryBoys = async (req, res) => {
+  try {
+    // Find all delivery boys
+    const allDeliveryBoys = await DeliveryBoy.find();
+
+    // Check if any delivery boys are found
+    if (allDeliveryBoys.length === 0) {
+      return res.status(404).json({ message: "No delivery boys found." });
+    }
+
+    res.status(200).json({
+      message: "All delivery boys retrieved successfully.",
+      deliveryBoys: allDeliveryBoys,  // Return the list of all delivery boys
+    });
+  } catch (error) {
+    console.error("Error fetching delivery boys:", error);
+    res.status(500).json({ error: error.message });
   }
 };
