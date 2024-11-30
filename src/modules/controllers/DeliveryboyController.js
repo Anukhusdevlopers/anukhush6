@@ -1,4 +1,6 @@
 const DeliveryBoy = require('../models/DeliveryBoyNew');
+const ScrapItem = require("../models/Scraplist");
+
 const jwt = require('jsonwebtoken');
 const axios = require('axios'); // Add this line
 const mongoose = require('mongoose');
@@ -386,3 +388,132 @@ exports.getAllDeliveryBoys = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+exports.startDelivery = async (req, res) => {
+  try {
+    // Extract requestId and number (delivery boy's phone number) from the request body
+    const { requestId, number } = req.body;
+
+    if (!number) {
+      return res.status(400).json({ message: "Delivery boy's number is required" });
+    }
+
+    // Find the delivery boy by their phone number
+    const deliveryBoy = await DeliveryBoy.findOne({ number });
+
+    if (!deliveryBoy) {
+      return res.status(404).json({ message: "Delivery boy not found" });
+    }
+
+    // Generate OTP
+    const otp = generateOTP();
+
+    // Update the ScrapItem document with the generated OTP and associate the delivery boy
+    const scrapItemUpdate = await ScrapItem.findOneAndUpdate(
+      { requestId },
+      {
+        status: "inprogress", // Change status to 'inprogress'
+        otp,
+        deliveryBoy: deliveryBoy._id, // Use the delivery boy's ID
+      },
+      { new: true } // Return the updated document
+    );
+
+    if (!scrapItemUpdate) {
+      return res.status(404).json({ message: "Scrap Item not found" });
+    }
+
+    // Save the OTP in the delivery boy's record for later verification
+    await DeliveryBoy.findByIdAndUpdate(
+      deliveryBoy._id,
+      { otp, isActive: true }, // Add OTP to the delivery boy's record
+      { new: true }
+    );
+
+    // Populate the ScrapItem with the delivery boy's details
+    const populatedScrapItem = await ScrapItem.findOne({ requestId }).populate('deliveryBoy');
+
+    // Respond with success, returning the OTP and ScrapItem with delivery boy details
+    return res.status(200).json({
+      message: "Delivery started successfully",
+      otp, // Return the OTP for client-side use
+      scrapItem: {
+        ...populatedScrapItem.toObject(), // Convert ScrapItem document to plain object
+        deliveryBoy: undefined, // Remove redundant deliveryBoy details
+      },
+      deliveryBoy: {
+        _id: deliveryBoy._id,
+        name: deliveryBoy.name,
+        number: deliveryBoy.number,
+        email: deliveryBoy.email,
+        isActive: deliveryBoy.isActive,
+        location: deliveryBoy.location,
+      }, // Include only necessary delivery boy details here
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Internal Server Error", error });
+  }
+};
+
+
+
+exports.verifyDeliveryOtp = async (req, res) => {
+  try {
+    // Step 1: Extract requestId and OTP from the request body
+    const { requestId, otp } = req.body;
+
+    // Step 2: Validate input (requestId and OTP should be provided)
+    if (!requestId || !otp) {
+      return res.status(400).json({ message: "Request ID and OTP are required" });
+    }
+
+    // Step 3: Find the ScrapItem by requestId to get the associated deliveryBoy
+    const scrapItem = await ScrapItem.findOne({ requestId }).populate('deliveryBoy');
+    
+    // If ScrapItem not found, return error
+    if (!scrapItem) {
+      return res.status(404).json({ message: "Scrap Item not found" });
+    }
+
+    // Step 4: Get the delivery boy associated with this scrap item
+    const deliveryBoy = scrapItem.deliveryBoy;
+
+    // If no delivery boy associated with the ScrapItem, return error
+    if (!deliveryBoy) {
+      return res.status(404).json({ message: "Delivery Boy not found for this request" });
+    }
+
+    // Step 5: Check if the OTP matches the one stored in the DeliveryBoy record
+    if (deliveryBoy.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    // Step 6: Update the ScrapItem status to 'inprogress'
+    scrapItem.status = "inprogress";  // You can change this status to 'completed' if needed
+    await scrapItem.save();
+
+    // Step 7: Clear the OTP from the DeliveryBoy and keep 'isActive' as true
+    deliveryBoy.otp = null;  // Clear OTP after successful verification
+    deliveryBoy.isActive = true;  // Ensure the delivery boy remains active
+    await deliveryBoy.save();
+
+    // Step 8: Send the response with the updated ScrapItem and DeliveryBoy data
+    return res.status(200).json({
+      message: "OTP verified successfully. Delivery confirmed.",
+      scrapItem: {
+        requestId: scrapItem.requestId,
+        status: scrapItem.status,
+      },
+      deliveryBoy: {
+        _id: deliveryBoy._id,
+        name: deliveryBoy.name,
+        number: deliveryBoy.number,
+        isActive: deliveryBoy.isActive,  // Should remain true
+      },
+    });
+  } catch (error) {
+    console.error(error);  // Log any unexpected errors for debugging
+    return res.status(500).json({ message: "Internal Server Error", error });
+  }
+};
+

@@ -26,7 +26,7 @@ const ScrapItemSchema = new mongoose.Schema({
   
 status: {
     type: String,
-    enum: ['completed', 'cancelled', 'upcoming', 'pending'],
+    enum: ['completed', 'cancelled', 'upcoming', 'inprogress'],
     default: 'upcoming', // or whichever status should be default
   },
   paymentMode: { type: String, required: true }, // New field for payment mode
@@ -36,7 +36,21 @@ status: {
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'AnuUser2', // Refers to the AnuUser2 model
     required: true // Make it required if you always need this reference
-  }
+  },
+  deliveryBoy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'DeliveryBoy', // Refers to the DeliveryBoy model
+  },
+  isVerified: { 
+    type: Boolean, 
+    default: false, // Default to false unless specified
+ 
+  },
+  isAssigned: { 
+    type: Boolean, 
+    default: false, // Default to false unless specified
+  
+  },
 });
 
 module.exports = mongoose.model('ScrapItem', ScrapItemSchema);

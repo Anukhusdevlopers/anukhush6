@@ -14,7 +14,19 @@ const createScrapItem = async (req, res) => {
       return res.status(401).json({ message: "Authorization token is required." });
     }
 
-    const { scrapItems, name, pickUpDate, pickUpTime, location, latitude, longitude, anuUser2Id ,paymentMode} = req.body;
+    const { 
+      scrapItems, 
+      name, 
+      pickUpDate, 
+      pickUpTime, 
+      location, 
+      latitude, 
+      longitude, 
+      anuUser2Id, 
+      paymentMode, 
+      isVerified = false, // Default value for isVerified
+      isAssigned = false // Default value for isAssigned
+    } = req.body;
 
     let parsedScrapItems;
     try {
@@ -50,7 +62,9 @@ const createScrapItem = async (req, res) => {
       longitude: longitude ? parseFloat(longitude) : null,
       requestId: requestId,
       anuUser2: anuUser2Id, // Add the AnuUser2 reference (ID)
-      paymentMode
+      paymentMode,
+      isVerified, // Include isVerified field
+      isAssigned // Include isAssigned field
     });
 
     // Save the new scrap item to the database
