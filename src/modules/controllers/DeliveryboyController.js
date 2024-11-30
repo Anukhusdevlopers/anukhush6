@@ -340,34 +340,52 @@ exports. getRequestsByStatus = async (req, res) => {
 };
 exports.getProfileDeliveryBoy = async (req, res) => {
   try {
-      const token = req.header('Authorization')?.replace('Bearer ', '').trim();
-      console.log("Token received:", token); // Log the received token
+    const token = req.header('Authorization')?.replace('Bearer ', '').trim();
+    console.log("Token received:", token); // Log the received token
 
-      if (!token) {
-          return res.status(401).json({ message: 'Authorization token required' });
-      }
+    if (!token) {
+      return res.status(401).json({ message: 'Authorization token required' });
+    }
 
-      const decoded = jwt.verify(token, JWT_SECRET);
-      const userId = decoded.userId;
-      console.log("Decoded User ID:", userId);
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userId = decoded.userId;
+    console.log("Decoded User ID:", userId);
 
-      const user = await DeliveryBoy.findById(userId).select(
-          'name _id address email aadharNo panNo vehicleType licenseNo number assignedBy createdAt updatedAt'
-      );
+    const user = await DeliveryBoy.findById(userId).select(
+      'name _id address email aadharNo panNo vehicleType licenseNo number assignedBy isActive createdAt updatedAt'
+    );
 
-      if (!user) {
-          return res.status(404).json({ message: 'User not found' });
-      }
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-      return res.status(200).json(user);
+    return res.status(200).json({
+      message: 'Profile retrieved successfully',
+      user: {
+        name: user.name,
+        _id: user._id,
+        address: user.address,
+        email: user.email,
+        aadharNo: user.aadharNo,
+        panNo: user.panNo,
+        vehicleType: user.vehicleType,
+        licenseNo: user.licenseNo,
+        number: user.number,
+        assignedBy: user.assignedBy,
+        isActive: user.isActive, // Include the isActive field in the response
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    });
   } catch (error) {
-      console.error("Error retrieving profile:", error);
-      if (error.name === 'JsonWebTokenError') {
-          return res.status(401).json({ message: 'Invalid token', error: error.message });
-      }
-      res.status(500).json({ message: 'Error retrieving profile', error: error.message });
+    console.error("Error retrieving profile:", error);
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid token', error: error.message });
+    }
+    res.status(500).json({ message: 'Error retrieving profile', error: error.message });
   }
 };
+
 // Get all delivery boys without filtering by status
 exports.getAllDeliveryBoys = async (req, res) => {
   try {
@@ -488,8 +506,9 @@ exports.verifyDeliveryOtp = async (req, res) => {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
-    // Step 6: Update the ScrapItem status to 'inprogress'
-    scrapItem.status = "inprogress";  // You can change this status to 'completed' if needed
+    // Step 6: Update the ScrapItem status to 'inprogress' and set isVerified to true
+    scrapItem.status = "inprogress";  // Change status to 'inprogress' or 'completed' as required
+    scrapItem.isVerified = true;  // Set isVerified to true
     await scrapItem.save();
 
     // Step 7: Clear the OTP from the DeliveryBoy and keep 'isActive' as true
@@ -503,6 +522,7 @@ exports.verifyDeliveryOtp = async (req, res) => {
       scrapItem: {
         requestId: scrapItem.requestId,
         status: scrapItem.status,
+        isVerified: scrapItem.isVerified, // Include the updated isVerified field
       },
       deliveryBoy: {
         _id: deliveryBoy._id,
