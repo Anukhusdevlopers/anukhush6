@@ -1,8 +1,13 @@
 // controllers/scrapItemController.js
 const ScrapItem = require('../models/Scraplist'); // Ensure the correct model name
-const User=require('../models/AnuUser')
+const User=require('../models/AnuUser');
+const DeliveryBoy=require('../models/DeliveryBoyNew')
 // Create Scrap Item
 const { v4: uuidv4 } = require('uuid'); // Import the uuid library
+
+// controllers/scrapItemController.js
+
+
 
 const createScrapItem = async (req, res) => {
   try {
@@ -24,8 +29,9 @@ const createScrapItem = async (req, res) => {
       longitude, 
       anuUser2Id, 
       paymentMode, 
-      isVerified = false, // Default value for isVerified
-      isAssigned = false // Default value for isAssigned
+      isVerified = false, 
+      isAssigned = false, 
+      isInstantPickUp = false 
     } = req.body;
 
     let parsedScrapItems;
@@ -35,47 +41,77 @@ const createScrapItem = async (req, res) => {
       return res.status(400).json({ message: "Invalid scrapItems format", error: err.message });
     }
 
-    // Get the current date in DDMMYY format
     const currentDate = new Date();
     const day = String(currentDate.getDate()).padStart(2, '0');
-    const month = String(currentDate.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
-    const year = String(currentDate.getFullYear()).slice(-2); // Get last two digits of the year
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const year = String(currentDate.getFullYear()).slice(-2);
 
-    // Generate a unique numeric request number
-    const existingScrapItems = await ScrapItem.find({});
-    const requestNumber = existingScrapItems.length + 1; // Simple incrementing number
-
-    // Construct the requestId
+    const requestNumber = (await ScrapItem.find({})).length + 1;
     const requestId = `${day}${month}${year}${requestNumber}`;
 
-    // Create a new ScrapItem instance with the generated requestId
     const newScrapItem = new ScrapItem({
-      authToken: authToken, // Setting the authToken from the header
+      authToken,
       scrapItems: parsedScrapItems,
       name,
       image: req.file ? req.file.path : null,
       pickUpDate,
       pickUpTime,
       location,
-      // Set latitude and longitude only if they are provided; otherwise, set them to null
-      latitude: latitude ? parseFloat(latitude) : null,
-      longitude: longitude ? parseFloat(longitude) : null,
-      requestId: requestId,
-      anuUser2: anuUser2Id, // Add the AnuUser2 reference (ID)
+      latitude: parseFloat(latitude) || null,
+      longitude: parseFloat(longitude) || null,
+      requestId,
+      anuUser2: anuUser2Id,
       paymentMode,
-      isVerified, // Include isVerified field
-      isAssigned // Include isAssigned field
+      isVerified,
+      isAssigned,
+      isInstantPickUp
     });
 
-    // Save the new scrap item to the database
+    if (isInstantPickUp && latitude && longitude) {
+      const deliveryBoys = await DeliveryBoy.find({
+        location: { $geoWithin: { $centerSphere: [[longitude, latitude], 5 / 3963] } }
+      }).select("name number");
+
+      // If delivery boys are found, assign one
+      if (deliveryBoys.length > 0) {
+        const assignedDeliveryBoy = deliveryBoys[0]; // Adjust logic as needed for selection
+
+        newScrapItem.isAssigned = true;
+        newScrapItem.name = assignedDeliveryBoy.name;
+        newScrapItem.number = assignedDeliveryBoy.number;
+
+        await newScrapItem.save();
+
+        return res.status(200).json({
+          status: 200,
+          data: {
+            requestId: newScrapItem.requestId,
+            deliveryBoy: {
+              name: assignedDeliveryBoy.name || null,
+              number: assignedDeliveryBoy.number || null,
+            }
+          },
+          message: 'Request created and delivery boy assigned.',
+        });
+      } else {
+        // If no delivery boys are found within 5 km
+        return res.status(200).json({
+          status: 200,
+          data: {
+            requestId: newScrapItem.requestId,
+            deliveryBoy: null, // Indicate that no delivery boy was found
+          },
+          message: 'Request created, but no delivery boys found within 5 km.',
+        });
+      }
+    }
+
+    // Save the new scrap item if instant pickup is not enabled
     await newScrapItem.save();
 
-    // Send back the created item with the specified response format
     res.status(200).json({
       status: 200,
-      data: {
-        requestId: newScrapItem.requestId, // Use the generated requestId
-      },
+      data: { requestId: newScrapItem.requestId },
       message: 'Request created successfully',
     });
   } catch (error) {
@@ -86,7 +122,6 @@ const createScrapItem = async (req, res) => {
     });
   }
 };
-
 
 // Controller to fetch all scrap requests based on authToken and role
 // Fetch requests based on authToken from headers

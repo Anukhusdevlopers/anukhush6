@@ -5,6 +5,18 @@ const { assignWholesaler, getWholesalersByAdmin,WholesalerLogin, verifyOTP,deact
 
 
 const { assignDeliveryBoy, getDeliveryBoysByWholesaler,deliveryboyLogin,startDelivery,verifyOTPDeliveryboy ,verifyDeliveryOtp,getAllDeliveryBoys,getProfileDeliveryBoy,getRequestsByStatus, updateDeliveryBoyAddress,deactivateDeliveryBoy,getDeliveryBoysByWholesalerId} = require('../controllers/DeliveryboyController');
+const { instantPickupController} = require('../controllers/InstantPickup');
+
+// Route for handling instant pickup requests via HTTP
+router.post('/instant-picup', (req, res) => {
+    const data = req.body;
+
+    // Use the controller to process the request
+    instantPickupController(null, data);
+
+    // Send response
+    res.status(200).json({ message: 'Pickup request processed successfully!' });
+});
 router.get('/all-delivery-boys',getAllDeliveryBoys);
 router.post('/startDelivery', startDelivery);
 router.post('/verify-delivery-otp', verifyDeliveryOtp);

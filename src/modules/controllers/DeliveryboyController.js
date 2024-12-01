@@ -26,12 +26,18 @@ const OTP_EXPIRATION_TIME = 60 * 60 * 1000; // 1 hour in milliseconds
 // Assign Delivery Boy by Wholesaler
 // Assign Delivery Boy by Wholesaler
 exports.assignDeliveryBoy = async (req, res) => {
-  const { name, addresses, email, aadharNo, panNo, vehicleType, licenseNo, number, assignedBy, location  } = req.body;
- // Check if location is provided
- if (!location) {
-  return res.status(400).json({ error: "Location is required." });
-}
+  const { name, addresses, email, aadharNo, panNo, vehicleType, licenseNo, number, assignedBy, location } = req.body;
+
+  // Check if location is provided
+  if (!location) {
+    return res.status(400).json({ error: "Location is required." });
+  }
+
   try {
+    // Extract latitude and longitude dynamically (example: from a geolocation API or request body)
+    const { latitude, longitude } = req.body;
+   
+
     // Check if the number exists in either the Customer (User) or Wholesaler model
     const existingUser = await User.findOne({ number });
     const existingWholesaler = await Wholesaler.findOne({ number });
@@ -43,6 +49,7 @@ exports.assignDeliveryBoy = async (req, res) => {
     if (existingWholesaler) {
       return res.status(400).json({ error: "This number is already registered as Wholesaler" });
     }
+
     // Check if the number of addresses exceeds the limit
     if (addresses.length > 5) {
       return res.status(400).json({ error: "A delivery boy can have at most 5 addresses." });
@@ -52,32 +59,33 @@ exports.assignDeliveryBoy = async (req, res) => {
     let deliveryBoy = await DeliveryBoy.findOne({ email }); // Assuming email is unique
 
     if (!deliveryBoy) {
-      // Directly use addresses as an array of strings
+      // Create new delivery boy
       deliveryBoy = new DeliveryBoy({
         name,
-        address: addresses, // Store as an array of strings
+        address: addresses,
         email,
         aadharNo,
         panNo,
-        location,  // Store the location field
-
         vehicleType,
         licenseNo,
         number,
         assignedBy,
-        status: 'current' // Set the status as 'current'
+        location,
+        latitude, // Include latitude
+        longitude, // Include longitude
+        status: 'current',
       });
     } else {
-      // If the delivery boy already exists, update the addresses
-      // Combine existing addresses and new ones without exceeding the limit
-      const combinedAddresses = [...new Set([...deliveryBoy.address, ...addresses])]; // Combine and remove duplicates
+      // Update the existing delivery boy
+      const combinedAddresses = [...new Set([...deliveryBoy.address, ...addresses])];
       if (combinedAddresses.length > 5) {
         return res.status(400).json({ error: "A delivery boy can have at most 5 addresses." });
       }
-      deliveryBoy.address = combinedAddresses; // Update the addresses
-      deliveryBoy.location = location; // Update location
-
-      deliveryBoy.status = 'current'; // Set status to 'current' for updated assignment
+      deliveryBoy.address = combinedAddresses;
+      deliveryBoy.location = location;
+      deliveryBoy.latitude = latitude; // Update latitude
+      deliveryBoy.longitude = longitude; // Update longitude
+      deliveryBoy.status = 'current';
     }
 
     await deliveryBoy.save();
@@ -88,18 +96,18 @@ exports.assignDeliveryBoy = async (req, res) => {
     res.status(201).json({
       message: "Delivery Boy assigned successfully",
       deliveryBoy: {
-        ...deliveryBoy.toObject(), // Convert to plain object
-        address: deliveryBoy.address, // Ensure address is in the correct format
-        location: deliveryBoy.location // Ensure location is included
-
+        ...deliveryBoy.toObject(),
+        address: deliveryBoy.address,
+        location: deliveryBoy.location,
+        latitude: deliveryBoy.latitude, // Ensure latitude is returned
+        longitude: deliveryBoy.longitude, // Ensure longitude is returned
       },
-      token // Include the token in the response
+      token,
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
-
 exports.getDeliveryBoysByWholesalerId = async (req, res) => {
   const { id } = req.params; // delivery boy's ID
 

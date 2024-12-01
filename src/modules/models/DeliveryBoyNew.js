@@ -12,7 +12,8 @@ const deliveryBoySchema = new mongoose.Schema({
   number: { type: String, required: true,unique: true },
   status: { type: String, required: true, default: 'current' }, // Default to 'current'
   location: { type: String, required: true } , // Add the location field here
-
+  latitude: { type: Number,  }, // New latitude field
+  longitude: { type: Number,  }, // New longitude field
   isActive: {
     type: Boolean,
     default: false, // By default, a new delivery boy is active

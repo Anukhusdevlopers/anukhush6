@@ -50,22 +50,41 @@ server.listen(runPORT, () => {
  const scraplistnew=require('./modules/router/ScrapListNewRouter');
  app.use(scraplistnew);
 // Socket.IO integration
+// Socket.IO Integration
 let currentLocation = { lat: 28.6041667, lng: 77.3428319 }; // Default location (New Delhi)
 
 io.on('connection', (socket) => {
     console.log('New client connected:', socket.id);
 
-    // Send the current location to the connected client
+    // Emit the current location to the connected client
     socket.emit('locationUpdated', currentLocation);
 
     // Listen for location updates from clients
     socket.on('updateLocation', (location) => {
         currentLocation = location;
-        console.log('Updated location:', location);
-        io.emit('locationUpdated', currentLocation); // Broadcast updated location to all connected clients
+        console.log('Updated location received from client:', location);
+
+        // Broadcast updated location to all connected clients
+        io.emit('locationUpdated', currentLocation);
     });
 
+    // Custom Events: You can add more custom events as required
+    socket.on('instantPickupRequest', (data) => {
+        console.log('Instant Pickup Request Received:', data);
+
+        // Emit delivery assigned or no delivery boy event
+        if (Math.random() > 0.5) {
+            io.emit('deliveryAssigned', { message: 'Delivery Boy Assigned', data });
+        } else {
+            io.emit('noDeliveryBoy', { message: 'No Delivery Boy Found' });
+        }
+    });
+
+    // Handle disconnection
     socket.on('disconnect', () => {
         console.log('Client disconnected:', socket.id);
     });
 });
+
+// Exports (Optional, for unit testing or additional modularization)
+module.exports = { app, server, io };

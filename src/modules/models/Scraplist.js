@@ -16,8 +16,8 @@ const ScrapItemSchema = new mongoose.Schema({
   name: { type: String, required: true },
   image: { type: String },
   formimage: { type: String },//add on delivery boy manuaaly added this image 
-  pickUpDate: { type: Date, required: true }, // New field for pickup date
-  pickUpTime: { type: String, required: true }, // New field for pickup time as string
+  pickUpDate: { type: Date,  }, // New field for pickup date
+  pickUpTime: { type: String,  }, // New field for pickup time as string
   location: { type: String, required: true },
   latitude: { type: Number, }, // New field for latitude
   longitude: { type: Number, } , // New field for longitude
@@ -30,7 +30,10 @@ status: {
     default: 'upcoming', // or whichever status should be default
   },
   paymentMode: { type: String, required: true }, // New field for payment mode
-
+isInstantPickUp: {
+    type: Boolean,
+    default: false, // Set default to false unless specified
+  },
   // Reference to the AnuUser2 table
   anuUser2: { 
     type: mongoose.Schema.Types.ObjectId, 
