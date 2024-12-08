@@ -72,7 +72,7 @@ exports.loginUser = async (req, res) => {
             }
 
             // Generate JWT token
-            const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+            const token = jwt.sign({ userId: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
             return res.status(200).json({
                 message: "OTP sent successfully! Please verify to log in.",

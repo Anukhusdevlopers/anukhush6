@@ -544,4 +544,45 @@ exports.verifyDeliveryOtp = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error", error });
   }
 };
+exports. assignDeliveryBoyCureent = async (req, res) => {
+  const { userId, latitude, longitude } = req.body;
+
+  try {
+    // Find the nearest active delivery boy within 5 km (5000 meters)
+    const nearestDeliveryBoy = await DeliveryBoy.findOne({
+      isActive: true, // Only consider active delivery boys
+      status: "current", // Must have current status
+      location: {
+        $nearSphere: {
+          $geometry: { type: "Point", coordinates: [longitude, latitude] }, // User's location
+          $maxDistance: 5000 // 5 km in meters
+        }
+      }
+    });
+
+    if (nearestDeliveryBoy) {
+      // Mark delivery boy as assigned
+      nearestDeliveryBoy.isActive = false; // Mark delivery boy inactive (assigned)
+      nearestDeliveryBoy.assignedBy = userId; // Assign the user ID
+      await nearestDeliveryBoy.save(); // Save changes to the database
+
+      // Respond with the assigned delivery boy details
+      return res.json({
+        message: 'Delivery boy assigned successfully',
+        deliveryBoy: {
+          id: nearestDeliveryBoy._id,
+          name: nearestDeliveryBoy.name,
+          number: nearestDeliveryBoy.number,
+          distance: 'Within 5 km' // Optional: Indicate distance range
+        }
+      });
+    } else {
+      // No delivery boy found within 5 km
+      return res.status(404).json({ message: 'No delivery boy available within 5 km.' });
+    }
+  } catch (error) {
+    console.error('Error in assignDeliveryBoyCurrent:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
 

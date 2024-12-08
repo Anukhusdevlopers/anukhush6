@@ -11,9 +11,10 @@ const deliveryBoySchema = new mongoose.Schema({
   licenseNo: { type: String, required: true },
   number: { type: String, required: true,unique: true },
   status: { type: String, required: true, default: 'current' }, // Default to 'current'
-  location: { type: String, required: true } , // Add the location field here
-  latitude: { type: Number,  }, // New latitude field
-  longitude: { type: Number,  }, // New longitude field
+  location: {
+    type: { type: String, enum: ['Point'], default: 'Point' }, // GeoJSON type
+    coordinates: { type: [Number], required: true } // [longitude, latitude]
+  },
   isActive: {
     type: Boolean,
     default: false, // By default, a new delivery boy is active
@@ -23,7 +24,11 @@ const deliveryBoySchema = new mongoose.Schema({
 
   assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Wholesaler' }, // Reference to Wholesaler
 }, { timestamps: true });
-
+// Create the geospatial index for 'location' after the model is initialized
 const DeliveryBoy = mongoose.model('DeliveryBoy', deliveryBoySchema);
+DeliveryBoy.createIndexes()
+  .then(() => console.log('Index created for location field'))
+  .catch(err => console.error('Error creating index:', err));
+//const DeliveryBoy = mongoose.model('DeliveryBoy', deliveryBoySchema);
 
 module.exports = DeliveryBoy;

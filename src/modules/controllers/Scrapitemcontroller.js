@@ -7,25 +7,27 @@ const { v4: uuidv4 } = require('uuid'); // Import the uuid library
 
 // controllers/scrapItemController.js
 
-
-
 const createScrapItem = async (req, res) => {
   try {
+    // Logging the authorization header for debugging purposes
     console.log("Authorization Header:", req.headers.authorization);
 
+    // Extracting authToken from the request headers (Authorization Bearer token)
     const authToken = req.headers.authToken || req.headers.authorization?.split(" ")[1];
 
+    // If no authToken is found, return a 401 Unauthorized response
     if (!authToken) {
       return res.status(401).json({ message: "Authorization token is required." });
     }
 
+    // Destructuring data from the request body
     const { 
       scrapItems, 
       name, 
       pickUpDate, 
       pickUpTime, 
-      location, 
       latitude, 
+      location, 
       longitude, 
       anuUser2Id, 
       paymentMode, 
@@ -36,19 +38,24 @@ const createScrapItem = async (req, res) => {
 
     let parsedScrapItems;
     try {
+      // Parse the scrapItems (assuming it's a JSON string)
       parsedScrapItems = JSON.parse(scrapItems); 
     } catch (err) {
+      // If JSON parsing fails, return a bad request response
       return res.status(400).json({ message: "Invalid scrapItems format", error: err.message });
     }
 
+    // Generating a requestId based on the current date and total number of scrap items
     const currentDate = new Date();
     const day = String(currentDate.getDate()).padStart(2, '0');
     const month = String(currentDate.getMonth() + 1).padStart(2, '0');
     const year = String(currentDate.getFullYear()).slice(-2);
 
+    // Creating a requestId based on the current date and the total number of scrap items
     const requestNumber = (await ScrapItem.find({})).length + 1;
     const requestId = `${day}${month}${year}${requestNumber}`;
 
+    // Creating a new ScrapItem instance
     const newScrapItem = new ScrapItem({
       authToken,
       scrapItems: parsedScrapItems,
@@ -67,19 +74,30 @@ const createScrapItem = async (req, res) => {
       isInstantPickUp
     });
 
+    // Handling instant pickup logic (assigning a delivery boy if needed)
     if (isInstantPickUp && latitude && longitude) {
       const deliveryBoys = await DeliveryBoy.find({
-        location: { $geoWithin: { $centerSphere: [[longitude, latitude], 5 / 3963] } }
-      }).select("name number");
+        location: {
+          $nearSphere: {
+            $geometry: {
+              type: "Point",
+              coordinates: [longitude, latitude] // User's location (longitude first, then latitude)
+            },
+            $maxDistance: 5000 // 5km distance in meters
+          }
+        }
+      }).select("name number location");
 
-      // If delivery boys are found, assign one
+      // If delivery boys are found, assign one to the request
       if (deliveryBoys.length > 0) {
-        const assignedDeliveryBoy = deliveryBoys[0]; // Adjust logic as needed for selection
+        const assignedDeliveryBoy = deliveryBoys[0]; // Selecting the first available delivery boy
 
+        // Updating the scrap item to indicate it has been assigned to a delivery boy
         newScrapItem.isAssigned = true;
         newScrapItem.name = assignedDeliveryBoy.name;
         newScrapItem.number = assignedDeliveryBoy.number;
 
+        // Save the scrap item with the assigned delivery boy
         await newScrapItem.save();
 
         return res.status(200).json({
@@ -94,27 +112,29 @@ const createScrapItem = async (req, res) => {
           message: 'Request created and delivery boy assigned.',
         });
       } else {
-        // If no delivery boys are found within 5 km
+        // If no delivery boys are found, return the request ID without an assignment
         return res.status(200).json({
           status: 200,
           data: {
             requestId: newScrapItem.requestId,
-            deliveryBoy: null, // Indicate that no delivery boy was found
+            deliveryBoy: null, // No delivery boy was found within range
           },
-          message: 'Request created, but no delivery boys found within 5 km.',
+          message: 'Request created, but no delivery boys found within 5 km range.',
         });
       }
     }
 
-    // Save the new scrap item if instant pickup is not enabled
+    // If instant pickup is not enabled, just save the new scrap item
     await newScrapItem.save();
 
+    // Respond with the created requestId
     res.status(200).json({
       status: 200,
       data: { requestId: newScrapItem.requestId },
       message: 'Request created successfully',
     });
   } catch (error) {
+    // Handle any unexpected errors during the process
     console.error("Error creating scrap item:", error);
     res.status(500).json({
       message: 'Error creating scrap item',
@@ -122,6 +142,7 @@ const createScrapItem = async (req, res) => {
     });
   }
 };
+
 
 // Controller to fetch all scrap requests based on authToken and role
 // Fetch requests based on authToken from headers

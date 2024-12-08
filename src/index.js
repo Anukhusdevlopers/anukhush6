@@ -51,40 +51,62 @@ server.listen(runPORT, () => {
  app.use(scraplistnew);
 // Socket.IO integration
 // Socket.IO Integration
-let currentLocation = { lat: 28.6041667, lng: 77.3428319 }; // Default location (New Delhi)
-
+// WebSocket Listener
 io.on('connection', (socket) => {
-    console.log('New client connected:', socket.id);
+  console.log('New client connected:', socket.id);
 
-    // Emit the current location to the connected client
-    socket.emit('locationUpdated', currentLocation);
+  // Listen for location updates from users
+  socket.on('updateLocation', async (data) => {
+      const { userId, latitude, longitude } = data;
 
-    // Listen for location updates from clients
-    socket.on('updateLocation', (location) => {
-        currentLocation = location;
-        console.log('Updated location received from client:', location);
+      try {
+          // Update user location in the database
+          await User.updateOne(
+              { _id: userId },
+              { $set: { latitude, longitude } }
+          );
 
-        // Broadcast updated location to all connected clients
-        io.emit('locationUpdated', currentLocation);
-    });
+          console.log(`Updated location for user ${userId}: ${latitude}, ${longitude}`);
 
-    // Custom Events: You can add more custom events as required
-    socket.on('instantPickupRequest', (data) => {
-        console.log('Instant Pickup Request Received:', data);
+          // Fetch the nearest delivery boy within 5 km
+          const nearestDeliveryBoy = await DeliveryBoy.findOne({
+              isActive: true,
+              status: 'current',
+              location: {
+                  $near: {
+                      $geometry: { type: 'Point', coordinates: [longitude, latitude] },
+                      $maxDistance: 5000 // 5 km radius
+                  }
+              }
+          });
 
-        // Emit delivery assigned or no delivery boy event
-        if (Math.random() > 0.5) {
-            io.emit('deliveryAssigned', { message: 'Delivery Boy Assigned', data });
-        } else {
-            io.emit('noDeliveryBoy', { message: 'No Delivery Boy Found' });
-        }
-    });
+          if (nearestDeliveryBoy) {
+              // Assign the delivery boy to the user
+              nearestDeliveryBoy.isActive = false; // Mark delivery boy as assigned
+              nearestDeliveryBoy.assignedBy = userId;
+              await nearestDeliveryBoy.save();
 
-    // Handle disconnection
-    socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
-    });
+              console.log(`Assigned delivery boy ${nearestDeliveryBoy.name} to user ${userId}`);
+
+              // Emit confirmation back to the client
+              socket.emit('deliveryAssigned', {
+                  deliveryBoy: {
+                      name: nearestDeliveryBoy.name,
+                      number: nearestDeliveryBoy.number
+                  }
+              });
+          } else {
+              console.log('No available delivery boy within 5 km.');
+              socket.emit('deliveryAssigned', { message: 'No delivery boy available' });
+          }
+      } catch (error) {
+          console.error('Error in location update:', error);
+      }
+  });
+
+  socket.on('disconnect', () => {
+      console.log('Client disconnected:', socket.id);
+  });
 });
-
 // Exports (Optional, for unit testing or additional modularization)
 module.exports = { app, server, io };
