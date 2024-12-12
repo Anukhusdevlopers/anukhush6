@@ -329,8 +329,29 @@ const cancelScrapItem = async (req, res) => {
     });
   }
 };
+
+// API to fetch unassigned requests
+const getUnassignedRequests = async (req, res) => {
+  try {
+    const unassignedRequests = await ScrapItem.find({ isAssigned: false });
+    const count = unassignedRequests.length;
+
+    res.status(200).json({
+      success: true,
+      message: `Total unassigned requests: ${count}`,
+      data: unassignedRequests,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching unassigned requests',
+      error: error.message,
+    });
+  }
+};
+
   // Get Requests by Status
  
   
 
-module.exports = { createScrapItem ,getRequestsByAuthTokenAndRole,getRequestById,getAllScrapRequests,getAllScrap,cancelScrapItem};
+module.exports = { createScrapItem ,getUnassignedRequests,getRequestsByAuthTokenAndRole,getRequestById,getAllScrapRequests,getAllScrap,cancelScrapItem};

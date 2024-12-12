@@ -1,12 +1,12 @@
 // routes/scrapItems.js
 const express = require('express');
 const router = express.Router();
-const {createScrapItem,getRequestsByAuthTokenAndRole,getRequestById,getAllScrapRequests,getAllScrap,cancelScrapItem} = require('../controllers/Scrapitemcontroller');
+const {createScrapItem,getRequestsByAuthTokenAndRole,getRequestById,getUnassignedRequests,getAllScrapRequests,getAllScrap,cancelScrapItem} = require('../controllers/Scrapitemcontroller');
 const upload=require('../image-file/index');
 const authentokication =require("../middleware/authMiddleware")
 // POST API endpoint
 router.post('/createscraplist',  upload.single('image'), createScrapItem);
-
+router.get('/unassigned-requests',getUnassignedRequests)
 router.get('/request-all//:userId',getRequestsByAuthTokenAndRole);
 router.get('/scrap-items/:requestId', getRequestById); // Define the new route
 router.get('/all-customers',getAllScrapRequests);

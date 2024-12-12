@@ -586,3 +586,13 @@ exports. assignDeliveryBoyCureent = async (req, res) => {
   }
 };
 
+// Get all delivery boys
+exports.getAllDeliveryBoysall = async (req, res) => {
+  try {
+    const deliveryBoys = await DeliveryBoy.find();
+    res.status(200).json({ success: true, data: deliveryBoys });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error fetching delivery boys', error: error.message });
+  }
+};
+

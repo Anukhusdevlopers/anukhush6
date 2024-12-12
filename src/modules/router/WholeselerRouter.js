@@ -4,9 +4,10 @@ const { assignWholesaler, getWholesalersByAdmin,WholesalerLogin, verifyOTP,deact
 
 
 
-const { assignDeliveryBoy, getDeliveryBoysByWholesaler,deliveryboyLogin,assignDeliveryBoyCureent,startDelivery,verifyOTPDeliveryboy ,verifyDeliveryOtp,getAllDeliveryBoys,getProfileDeliveryBoy,getRequestsByStatus, updateDeliveryBoyAddress,deactivateDeliveryBoy,getDeliveryBoysByWholesalerId} = require('../controllers/DeliveryboyController');
+const { assignDeliveryBoy, getDeliveryBoysByWholesaler,deliveryboyLogin,getAllDeliveryBoysall,assignDeliveryBoyCureent,startDelivery,verifyOTPDeliveryboy ,verifyDeliveryOtp,getAllDeliveryBoys,getProfileDeliveryBoy,getRequestsByStatus, updateDeliveryBoyAddress,deactivateDeliveryBoy,getDeliveryBoysByWholesalerId} = require('../controllers/DeliveryboyController');
 const { instantPickupController} = require('../controllers/InstantPickup');
 router.post('/assign-current-location', assignDeliveryBoyCureent)
+router.get('/all-delivery-boy',getAllDeliveryBoysall);
 // Route for handling instant pickup requests via HTTP
 router.post('/instant-picup', (req, res) => {
     const data = req.body;
