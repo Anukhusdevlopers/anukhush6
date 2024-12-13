@@ -26,43 +26,39 @@ const OTP_EXPIRATION_TIME = 60 * 60 * 1000; // 1 hour in milliseconds
 // Assign Delivery Boy by Wholesaler
 // Assign Delivery Boy by Wholesaler
 exports.assignDeliveryBoy = async (req, res) => {
-  const { name, addresses, email, aadharNo, panNo, vehicleType, licenseNo, number, assignedBy, location } = req.body;
+  const { name, address, email, aadharNo, panNo, vehicleType, licenseNo, number, assignedBy, location } = req.body;
 
-  // Check if location is provided
-  if (!location) {
-    return res.status(400).json({ error: "Location is required." });
+  // Check for required fields
+  if (!name || !address || !email || !aadharNo || !panNo || !vehicleType || !licenseNo || !number || !assignedBy || !location) {
+    return res.status(400).json({ error: 'All fields are required.' });
   }
 
   try {
-    // Extract latitude and longitude dynamically (example: from a geolocation API or request body)
-    const { latitude, longitude } = req.body;
-   
+    // Check if location is valid (should have type and coordinates)
+    if (!location.type || location.type !== 'Point' || !Array.isArray(location.coordinates) || location.coordinates.length !== 2) {
+      return res.status(400).json({ error: 'Invalid location format. It should include type "Point" and coordinates [longitude, latitude].' });
+    }
 
-    // Check if the number exists in either the Customer (User) or Wholesaler model
+    // Check if the number exists in either User or Wholesaler
     const existingUser = await User.findOne({ number });
     const existingWholesaler = await Wholesaler.findOne({ number });
 
     if (existingUser) {
-      return res.status(400).json({ error: "This number is already registered as a customer" });
+      return res.status(400).json({ error: 'This number is already registered as a customer.' });
     }
 
     if (existingWholesaler) {
-      return res.status(400).json({ error: "This number is already registered as Wholesaler" });
+      return res.status(400).json({ error: 'This number is already registered as a wholesaler.' });
     }
 
-    // Check if the number of addresses exceeds the limit
-    if (addresses.length > 5) {
-      return res.status(400).json({ error: "A delivery boy can have at most 5 addresses." });
-    }
-
-    // Fetch existing delivery boy or create a new one
-    let deliveryBoy = await DeliveryBoy.findOne({ email }); // Assuming email is unique
+    // Check if a delivery boy with this email already exists
+    let deliveryBoy = await DeliveryBoy.findOne({ email });
 
     if (!deliveryBoy) {
       // Create new delivery boy
       deliveryBoy = new DeliveryBoy({
         name,
-        address: addresses,
+        address,
         email,
         aadharNo,
         panNo,
@@ -71,41 +67,38 @@ exports.assignDeliveryBoy = async (req, res) => {
         number,
         assignedBy,
         location,
-        latitude, // Include latitude
-        longitude, // Include longitude
+        isActive: true,
         status: 'current',
       });
     } else {
-      // Update the existing delivery boy
-      const combinedAddresses = [...new Set([...deliveryBoy.address, ...addresses])];
-      if (combinedAddresses.length > 5) {
-        return res.status(400).json({ error: "A delivery boy can have at most 5 addresses." });
-      }
-      deliveryBoy.address = combinedAddresses;
+      // Update existing delivery boy
+      deliveryBoy.name = name;
+      deliveryBoy.address = [...new Set([...deliveryBoy.address, ...address])]; // Merge addresses without duplicates
+      deliveryBoy.aadharNo = aadharNo;
+      deliveryBoy.panNo = panNo;
+      deliveryBoy.vehicleType = vehicleType;
+      deliveryBoy.licenseNo = licenseNo;
+      deliveryBoy.number = number;
+      deliveryBoy.assignedBy = assignedBy;
       deliveryBoy.location = location;
-      deliveryBoy.latitude = latitude; // Update latitude
-      deliveryBoy.longitude = longitude; // Update longitude
+      deliveryBoy.isActive = true;
       deliveryBoy.status = 'current';
     }
 
+    // Save the delivery boy to the database
     await deliveryBoy.save();
 
-    // Generate JWT Token
-    const token = jwt.sign({ id: deliveryBoy._id, role: 'wholesaler' }, 'your_secret_key', { expiresIn: '1h' });
+    // Generate a JWT token
+    const token = jwt.sign({ id: deliveryBoy._id, role: 'deliveryBoy' }, 'your_secret_key', { expiresIn: '7d' });
 
     res.status(201).json({
-      message: "Delivery Boy assigned successfully",
-      deliveryBoy: {
-        ...deliveryBoy.toObject(),
-        address: deliveryBoy.address,
-        location: deliveryBoy.location,
-        latitude: deliveryBoy.latitude, // Ensure latitude is returned
-        longitude: deliveryBoy.longitude, // Ensure longitude is returned
-      },
+      message: 'Delivery boy assigned successfully.',
+      deliveryBoy,
       token,
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('Error assigning delivery boy:', error.message);
+    res.status(500).json({ error: 'An error occurred while assigning the delivery boy. Please try again.' });
   }
 };
 exports.getDeliveryBoysByWholesalerId = async (req, res) => {
