@@ -15,6 +15,9 @@ const deliveryBoySchema = new mongoose.Schema({
     type: { type: String, enum: ['Point'], default: 'Point' }, // GeoJSON type
     coordinates: { type: [Number], required: true } // [longitude, latitude]
   },
+  addressdelboy:{
+        type: String, required: true  
+  },
   isActive: {
     type: Boolean,
     default: false, // By default, a new delivery boy is active

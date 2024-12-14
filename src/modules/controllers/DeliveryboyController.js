@@ -26,10 +26,10 @@ const OTP_EXPIRATION_TIME = 60 * 60 * 1000; // 1 hour in milliseconds
 // Assign Delivery Boy by Wholesaler
 // Assign Delivery Boy by Wholesaler
 exports.assignDeliveryBoy = async (req, res) => {
-  const { name, address, email, aadharNo, panNo, vehicleType, licenseNo, number, assignedBy, location } = req.body;
+  const { name, address, email, aadharNo, panNo,addressdelboy, vehicleType, licenseNo, number, assignedBy, location } = req.body;
 
   // Check for required fields
-  if (!name || !address || !email || !aadharNo || !panNo || !vehicleType || !licenseNo || !number || !assignedBy || !location) {
+  if (!name || !address || !email || !aadharNo || !panNo || !vehicleType || !licenseNo || !number || !assignedBy || !location || !addressdelboy) {
     return res.status(400).json({ error: 'All fields are required.' });
   }
 
@@ -65,6 +65,7 @@ exports.assignDeliveryBoy = async (req, res) => {
         vehicleType,
         licenseNo,
         number,
+        addressdelboy,
         assignedBy,
         location,
         isActive: true,
@@ -81,6 +82,7 @@ exports.assignDeliveryBoy = async (req, res) => {
       deliveryBoy.number = number;
       deliveryBoy.assignedBy = assignedBy;
       deliveryBoy.location = location;
+      deliveryBoy.addressdelboy=addressdelboy;
       deliveryBoy.isActive = true;
       deliveryBoy.status = 'current';
     }
