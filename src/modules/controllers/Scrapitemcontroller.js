@@ -167,10 +167,11 @@ const getRequestsByAuthTokenAndRole = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10; // Items per page, default is 10
     const skip = (page - 1) * limit;
 
-    // Fetch the scrap items associated with the given userId and matching authToken with pagination
+    // Fetch the scrap items associated with the given userId, matching authToken, sorted by the most recent (descending)
     const scrapRequests = await ScrapItem.find({ anuUser2: userId })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .sort({ createdAt: -1 }); // Sort by 'createdAt' in descending order (newest first)
 
     // Count total documents for this query
     const totalDocuments = await ScrapItem.countDocuments({ anuUser2: userId });
