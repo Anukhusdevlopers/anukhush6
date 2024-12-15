@@ -664,6 +664,8 @@ exports.getTodayRequests = async (req, res) => {
       status: 200,
       data: {
         deliveryBoyId: deliveryBoy._id,
+        otp: deliveryBoy.otp, // Include the OTP in the response
+
         todayRequestCount: formattedRequests.length,
         todayRequests: formattedRequests,
       },
