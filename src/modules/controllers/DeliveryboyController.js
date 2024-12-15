@@ -602,7 +602,6 @@ exports.getAllDeliveryBoysall = async (req, res) => {
 
 
 
-
 exports.getTodayRequests = async (req, res) => {
   try {
     const { deliveryBoyId } = req.params;
@@ -620,7 +619,7 @@ exports.getTodayRequests = async (req, res) => {
       })
       .populate({
         path: 'requests.requestId',
-        select: 'scrapItems location status pickUpTime  pickUpDate  ', // Select the necessary fields
+        select: 'scrapItems location status pickUpTime pickUpDate requestId', // Include requestId in the select fields
       });
 
     if (!deliveryBoy) {
@@ -650,13 +649,13 @@ exports.getTodayRequests = async (req, res) => {
         longitude: request.user.longitude,
       } : null,
       requestId: request.requestId ? {
-        _id: request.requestId._id, // Ensure this is populated correctly
+        _id: request.requestId._id, // Include the populated _id
         scrapItems: request.requestId.scrapItems ? parseScrapItems(request.requestId.scrapItems) : [], // Handle parsing of scrapItems
         location: request.requestId.location,
         pickUpTime: request.requestId.pickUpTime,
         pickUpDate: request.requestId.pickUpDate,
         status: request.requestId.status, // Include the status field
-
+        requestId: request.requestId.requestId, // Include the requestId itself
       } : null,
     }));
 
