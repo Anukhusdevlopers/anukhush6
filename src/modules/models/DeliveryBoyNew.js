@@ -22,7 +22,15 @@ const deliveryBoySchema = new mongoose.Schema({
     type: Boolean,
     default: false, // By default, a new delivery boy is active
   },
-  
+ requests: [
+    {
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'AnuUser2' }, // Reference to User model
+
+      requestId: { type: mongoose.Schema.Types.ObjectId, ref: 'ScrapItem' }, // Request model ka reference
+      time: { type: Date, default: Date.now },
+    },
+  ],
+
   otp: { type: String }, // Add this field for storing OTP
 
   assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Wholesaler' }, // Reference to Wholesaler

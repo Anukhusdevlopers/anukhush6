@@ -590,4 +590,92 @@ exports.getAllDeliveryBoysall = async (req, res) => {
     res.status(500).json({ success: false, message: 'Error fetching delivery boys', error: error.message });
   }
 };
+//today request h delivery boy ki esme 
 
+
+
+
+
+
+exports.getTodayRequests = async (req, res) => {
+  try {
+    const { deliveryBoyId } = req.params;
+
+    // Check if the deliveryBoyId is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(deliveryBoyId)) {
+      return res.status(400).json({ message: 'Invalid deliveryBoyId' });
+    }
+
+    // Find the delivery boy and populate the required fields
+    const deliveryBoy = await DeliveryBoy.findById(deliveryBoyId)
+      .populate({
+        path: 'requests.user',
+        select: 'name number role',
+      })
+      .populate({
+        path: 'requests.requestId',
+        select: 'scrapItems location pickUpTime pickUpDate', // Select the necessary fields
+      });
+
+    if (!deliveryBoy) {
+      return res.status(404).json({ message: 'Delivery boy not found' });
+    }
+
+    // Get the current date's start and end times for filtering requests
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    // Filter the requests to only include those from today
+    const todayRequests = deliveryBoy.requests.filter((request) => {
+      return request.time >= todayStart && request.time <= todayEnd;
+    });
+
+    // Format the requests with necessary fields
+    const formattedRequests = todayRequests.map((request) => ({
+      _id: request._id,
+      time: request.time,
+      user: request.user ? {
+        _id: request.user._id,
+        name: request.user.name,
+        number: request.user.number,
+      } : null,
+      requestId: request.requestId ? {
+        _id: request.requestId._id, // Ensure this is populated correctly
+        scrapItems: request.requestId.scrapItems ? parseScrapItems(request.requestId.scrapItems) : [], // Handle parsing of scrapItems
+        location: request.requestId.location,
+        pickUpTime: request.requestId.pickUpTime,
+        pickUpDate: request.requestId.pickUpDate,
+      } : null,
+    }));
+
+    // Send response with the formatted data
+    res.status(200).json({
+      status: 200,
+      data: {
+        deliveryBoyId: deliveryBoy._id,
+        todayRequestCount: formattedRequests.length,
+        todayRequests: formattedRequests,
+      },
+      message: "Today's requests with user details fetched successfully.",
+    });
+  } catch (error) {
+    console.error('Error fetching today\'s requests:', error.message);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+// Helper function to parse scrapItems safely
+const parseScrapItems = (scrapItems) => {
+  try {
+    // If scrapItems is a string, parse it to JSON
+    if (typeof scrapItems === 'string') {
+      return JSON.parse(scrapItems); // Parse only if it's a valid JSON string
+    }
+    return scrapItems; // Return as-is if it's already an array/object
+  } catch (err) {
+    console.error('Error parsing scrapItems:', err.message);
+    return []; // Return an empty array if parsing fails
+  }
+};
