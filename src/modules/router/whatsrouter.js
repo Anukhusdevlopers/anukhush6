@@ -13,7 +13,7 @@ router.post('/login/api',sendMessage.loginUser);
 router.delete('/cutomer',sendMessage. deleteUser); // Adjust the URL path as needed
 
 router.post('/today-req', delivery.getRequestsByNumberAndDate);
-router.post('/single-request-id', delivery.getScrapItemByRequestId);
+router.post('/single-request-id/:deliveryBoyId/:requestId', delivery.getScrapItemByRequestId);
 router.put('/form-submit-data', upload.single('formimage'),delivery. updateDeliveryRequest); // Use 'upload.single' for single file upload
 
 router.post('/today-req-time', delivery.getRequestsByNumberAndDate1);

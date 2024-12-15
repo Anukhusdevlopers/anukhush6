@@ -1,7 +1,8 @@
 const ScrapItem = require('../models/Scraplist'); // Adjust the path as needed
 const User = require('../models/AnuUser'); // Import the Customer model
 const moment = require('moment');
-const DeliveryRequest=require("../models/Scraplist")
+const DeliveryRequest=require("../models/Scraplist");
+const DeliveryBoy=require('../models/DeliveryBoyNew')
 // Function to handle today-req
 exports.getRequestsByNumberAndDate = async (req, res) => {
     try {
@@ -132,50 +133,98 @@ exports.getRequestsByNumberAndDate1 = async (req, res) => {
       return res.status(500).json({ message: 'Server error' });
     }
   };
-  exports.getScrapItemByRequestId = async (req, res) => {
+  const mongoose = require("mongoose");
+
+ 
+
+exports.getScrapItemByRequestId = async (req, res) => {
     try {
-      // Get the authToken from the headers
-      const authToken = req.headers.authToken || req.headers.authorization?.split(" ")[1];
-  
-      if (!authToken) {
-        return res.status(401).json({ message: "Authorization token is required." });
-      }
-  
-      // Get requestId from the request body
-      const { requestId } = req.body;
-  
-      if (!requestId) {
-        return res.status(400).json({ message: "requestId is required." });
-      }
-  
-      // Find the ScrapItem by requestId and authToken
-      const scrapItem = await ScrapItem.findOne({ requestId });
+        // Get deliveryBoyId and requestId from URL parameters
+        const { deliveryBoyId, requestId } = req.params;
+
+        // Validate deliveryBoyId
+        if (!mongoose.Types.ObjectId.isValid(deliveryBoyId)) {
+            return res.status(400).json({ message: "Invalid delivery boy ID." });
+        }
+
+        // Validate requestId
+        if (!/^\d+$/.test(requestId)) { // Checking if requestId is numeric
+            return res.status(400).json({ message: "Invalid request ID." });
+        }
+
+        // Use aggregation to fetch the delivery boy's details and the specific request
+        const result = await DeliveryBoy.aggregate([
+            {
+                $match: { _id: new mongoose.Types.ObjectId(deliveryBoyId) }
+            },
+            {
+                $lookup: {
+                    from: "DeliveryBoy", // Correct collection name for DeliveryRequest
+                    localField: "requests.requestId", // Assuming requests contain requestId
+                    foreignField: "requestId", // DeliveryRequest's requestId field
+                    as: "requests" // alias for matched requests
+                }
+            },
+            {
+                $addFields: {
+                    matchedRequest: {
+                        $arrayElemAt: [
+                            {
+                                $filter: {
+                                    input: "$requestDetails",
+                                    as: "request",
+                                    cond: { $eq: ["$$request.requestId", requestId] } // Matching by requestId
+                                }
+                            },
+                            0
+                        ]
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    name: 1,
+                    requests: 1,
+                    matchedRequest: 1,
+                    isActive: 1,
+                    email: 1
+                }
+            }
+        ]);
+
+        // Check if the result contains data
+        if (!result || result.length === 0) {
+            return res.status(404).json({ message: "Delivery boy not found or request not found." });
+        }
+
+        const deliveryBoy = result[0];
+
+        // Check if the matchedRequest exists
+        if (!deliveryBoy.matchedRequest) {
+            return res.status(403).json({ message: "You are not authorised to access this request." });
+        }
+
+        // Send the response
+        return res.status(200).json({
+            status: 200,
+            data: {
+                deliveryBoy,
+                request: deliveryBoy.matchedRequest,
+            },
+            message: "Scrap item fetched successfully."
+        });
+    } catch (error) {
+        console.error("Error fetching scrap item:", error);
+        return res.status(500).json({
+            message: "Error fetching scrap item.",
+            error: error.message || "Internal server error"
+        });
+    }
+};
+
 
   
-      if (!scrapItem) {
-        return res.status(404).json({ message: "No scrap item found with the provided requestId." });
-      }
-  
-      // Prepare the response including the status
-      const response = {
-        status: 200,
-        data: {
-          scrapItem,
-          status: scrapItem.status || 'upcoming', // Assuming scrapItem has a 'status' field; default to 'unknown' if not available
-        },
-        message: "Scrap item fetched successfully.",
-      };
-  
-      // Send the response
-      return res.status(200).json(response);
-    } catch (error) {
-      console.error("Error fetching scrap item:", error);
-      return res.status(500).json({
-        message: "Error fetching scrap item.",
-        error: error.message || "Internal server error",
-      });
-    }
-  };
   //ye api hamare delivery boy jb amnnyaly verify krega data ki whi h ya nhi uske leye h 
   exports.updateDeliveryRequest = async (req, res) => {
     try {
