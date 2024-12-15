@@ -70,6 +70,8 @@ exports.assignDeliveryBoy = async (req, res) => {
         location,
         isActive: true,
         status: 'current',
+        role: 'deliveryAgent', // Adding role field with default value
+
       });
     } else {
       // Update existing delivery boy
@@ -85,6 +87,8 @@ exports.assignDeliveryBoy = async (req, res) => {
       deliveryBoy.addressdelboy=addressdelboy;
       deliveryBoy.isActive = true;
       deliveryBoy.status = 'current';
+      deliveryBoy.role = 'deliveryAgent'; // Ensure role is set during updates
+
     }
 
     // Save the delivery boy to the database

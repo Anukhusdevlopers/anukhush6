@@ -30,7 +30,11 @@ const deliveryBoySchema = new mongoose.Schema({
       time: { type: Date, default: Date.now },
     },
   ],
-
+role: {
+    type: String,
+    required: true,
+    default: "deliveryAgent"
+  },
   otp: { type: String }, // Add this field for storing OTP
 
   assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Wholesaler' }, // Reference to Wholesaler
