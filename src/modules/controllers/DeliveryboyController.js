@@ -616,11 +616,11 @@ exports.getTodayRequests = async (req, res) => {
     const deliveryBoy = await DeliveryBoy.findById(deliveryBoyId)
       .populate({
         path: 'requests.user',
-        select: 'name number role',
+        select: 'name number role latitude longitude',
       })
       .populate({
         path: 'requests.requestId',
-        select: 'scrapItems location pickUpTime pickUpDate', // Select the necessary fields
+        select: 'scrapItems location status pickUpTime  pickUpDate  ', // Select the necessary fields
       });
 
     if (!deliveryBoy) {
@@ -646,6 +646,8 @@ exports.getTodayRequests = async (req, res) => {
         _id: request.user._id,
         name: request.user.name,
         number: request.user.number,
+        latitude: request.user.latitude,
+        longitude: request.user.longitude,
       } : null,
       requestId: request.requestId ? {
         _id: request.requestId._id, // Ensure this is populated correctly
@@ -653,6 +655,8 @@ exports.getTodayRequests = async (req, res) => {
         location: request.requestId.location,
         pickUpTime: request.requestId.pickUpTime,
         pickUpDate: request.requestId.pickUpDate,
+        status: request.requestId.status, // Include the status field
+
       } : null,
     }));
 
