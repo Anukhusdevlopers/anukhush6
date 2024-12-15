@@ -379,6 +379,8 @@ exports.getProfileDeliveryBoy = async (req, res) => {
         licenseNo: user.licenseNo,
         number: user.number,
         assignedBy: user.assignedBy,
+        role: user.role, // Add the role field to the response
+
         isActive: user.isActive, // Include the isActive field in the response
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
