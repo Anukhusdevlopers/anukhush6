@@ -45,14 +45,12 @@ const createScrapItem = async (req, res) => {
     const requestNumber = (await ScrapItem.find({})).length + 1;
     const requestId = `${day}${month}${year}${requestNumber}`;
 
-    // Handle image (if any) manually
-    const imagePath = req.file ? req.file.path : null;
 
     const newScrapItem = new ScrapItem({
       authToken,
       scrapItems: parsedScrapItems,
       name,
-      image: imagePath,  // If no image is uploaded, it will be null
+      image: req.file ? req.file.path : null,
       pickUpDate,
       pickUpTime,
       location,
@@ -66,7 +64,6 @@ const createScrapItem = async (req, res) => {
       isInstantPickUp,
     });
 
-    // Handle instant pickup and assign delivery boy
     if (isInstantPickUp && latitude && longitude) {
       const deliveryBoys = await DeliveryBoy.find({
         location: {
@@ -75,7 +72,7 @@ const createScrapItem = async (req, res) => {
               type: "Point",
               coordinates: [longitude, latitude],
             },
-            $maxDistance: 5000, // 5km range
+            $maxDistance: 5000,
           },
         },
       }).select("name number location requests");
@@ -87,16 +84,16 @@ const createScrapItem = async (req, res) => {
         newScrapItem.name = assignedDeliveryBoy.name;
         newScrapItem.number = assignedDeliveryBoy.number;
 
-        // Update delivery boy's requests field
+        // Update the delivery boy's requests field
         const requestDetails = {
-          user: anuUser2Id, // Reference to the user
-          requestId: newScrapItem._id, // Reference to ScrapItem ID
+          user: anuUser2Id, // Reference to the user who created the request
+          requestId: newScrapItem._id, // Reference to the ScrapItem ID
           time: Date.now(),
         };
 
         await DeliveryBoy.findByIdAndUpdate(
           assignedDeliveryBoy._id,
-          { $push: { requests: requestDetails } }, // Add request to delivery boy's requests
+          { $push: { requests: requestDetails } }, // Add the userId and ScrapItem ID to requests
           { new: true }
         );
 
@@ -127,20 +124,19 @@ const createScrapItem = async (req, res) => {
 
     await newScrapItem.save();
 
-    return res.status(200).json({
+    res.status(200).json({
       status: 200,
       data: { requestId: newScrapItem.requestId },
       message: "Request created successfully",
     });
   } catch (error) {
     console.error("Error creating scrap item:", error);
-    return res.status(500).json({
+    res.status(500).json({
       message: "Error creating scrap item",
       error: error.message || "Internal server error",
     });
   }
 };
-
 
 
 // Controller to fetch all scrap requests based on authToken and role
@@ -355,7 +351,8 @@ const getUnassignedRequests = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `Total unassigned requests: ${count}`,
+      message: `Total unassigned requests: ${count}`, // Add backticks here for string interpolation
+
       data: unassignedRequests,
     });
   } catch (error) {
