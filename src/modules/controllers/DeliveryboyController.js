@@ -449,10 +449,13 @@ exports.startDelivery = async (req, res) => {
       return res.status(404).json({ message: "Scrap Item not found" });
     }
 
-    // Save the OTP in the delivery boy's record for later verification
+    // Update the delivery boy's status to `false` after assigning the task
     await DeliveryBoy.findByIdAndUpdate(
       deliveryBoy._id,
-      { otp, isActive: true }, // Add OTP to the delivery boy's record
+      {
+        otp,          // Store the OTP
+        isActive: false, // Immediately mark as inactive after delivery start
+      },
       { new: true }
     );
 
@@ -472,7 +475,7 @@ exports.startDelivery = async (req, res) => {
         name: deliveryBoy.name,
         number: deliveryBoy.number,
         email: deliveryBoy.email,
-        isActive: deliveryBoy.isActive,
+        isActive: false, // Reflect the updated status
         location: deliveryBoy.location,
       }, // Include only necessary delivery boy details here
     });
@@ -481,6 +484,7 @@ exports.startDelivery = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error", error });
   }
 };
+
 
 
 
@@ -690,3 +694,51 @@ const parseScrapItems = (scrapItems) => {
     return []; // Return an empty array if parsing fails
   }
 };
+exports.getRequestsByDeliveryBoyId = async (req, res) => {
+  try {
+    // Extract deliveryBoyId from the request parameters
+    const { deliveryBoyId } = req.params;
+
+    // Validate that the deliveryBoyId is provided
+    if (!deliveryBoyId) {
+      return res.status(400).json({ message: "Delivery Boy ID is required" });
+    }
+
+    // Find all ScrapItem requests assigned to the delivery boy
+    const requests = await ScrapItem.find({ deliveryBoy: deliveryBoyId })
+      .select(
+        'name image number pickUpDate pickUpTime scrapItems location latitude longitude requestId status paymentMode isInstantPickUp' // Select only necessary fields
+      );
+
+    // Check if there are any requests
+    if (!requests || requests.length === 0) {
+      return res.status(404).json({ message: "No requests found for this delivery boy" });
+    }
+
+    // Return the list of requests
+    return res.status(200).json({
+      message: "Requests retrieved successfully",
+      requests: requests.map((request) => ({
+        name: request.name,
+        image: request.image,
+        number:request.number,
+        pickUpDate: request.pickUpDate,
+        pickUpTime: request.pickUpTime,
+        location: request.location,
+        latitude: request.latitude,
+        longitude: request.longitude,
+        requestId: request.requestId,
+        status: request.status,
+        paymentMode: request.paymentMode,
+        isInstantPickUp: request.isInstantPickUp,
+        scrapItems: request.scrapItems, // Include scrapItems array
+
+      })),
+    });
+  } catch (error) {
+    console.error("Error fetching requests:", error);
+    return res.status(500).json({ message: "Internal Server Error", error });
+  }
+};
+
+

@@ -4,10 +4,11 @@ const { assignWholesaler, getWholesalersByAdmin,WholesalerLogin, verifyOTP,deact
 
 
 
-const { assignDeliveryBoy, getDeliveryBoysByWholesaler,deliveryboyLogin,getAllDeliveryBoysall,assignDeliveryBoyCureent,startDelivery,verifyOTPDeliveryboy ,verifyDeliveryOtp,getAllDeliveryBoys,getProfileDeliveryBoy,getRequestsByStatus, updateDeliveryBoyAddress,deactivateDeliveryBoy,getDeliveryBoysByWholesalerId,getTodayRequests} = require('../controllers/DeliveryboyController');
+const { assignDeliveryBoy, getDeliveryBoysByWholesaler,getRequestsByDeliveryBoyId,deliveryboyLogin,getAllDeliveryBoysall,assignDeliveryBoyCureent,startDelivery,verifyOTPDeliveryboy ,verifyDeliveryOtp,getAllDeliveryBoys,getProfileDeliveryBoy,getRequestsByStatus, updateDeliveryBoyAddress,deactivateDeliveryBoy,getDeliveryBoysByWholesalerId,getTodayRequests} = require('../controllers/DeliveryboyController');
 const { instantPickupController} = require('../controllers/InstantPickup');
 router.post('/assign-current-location', assignDeliveryBoyCureent)
 router.get('/all-delivery-boy',getAllDeliveryBoysall);
+router.get('/requests/:deliveryBoyId', getRequestsByDeliveryBoyId);
 
 router.get('/deliveryBoy//today-requests/:deliveryBoyId', getTodayRequests);
 
