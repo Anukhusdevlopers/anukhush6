@@ -44,6 +44,10 @@ isInstantPickUp: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'DeliveryBoy', // Refers to the DeliveryBoy model
   },
+  deliveryBoyDetails: {
+    name: { type: String },  // Name of the delivery boy
+    number: { type: String },  // Phone of the delivery boy
+  },
   isVerified: { 
     type: Boolean, 
     default: false, // Default to false unless specified

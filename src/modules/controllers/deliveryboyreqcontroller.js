@@ -139,89 +139,34 @@ exports.getRequestsByNumberAndDate1 = async (req, res) => {
 
 exports.getScrapItemByRequestId = async (req, res) => {
     try {
-        // Get deliveryBoyId and requestId from URL parameters
-        const { deliveryBoyId, requestId } = req.params;
-
-        // Validate deliveryBoyId
-        if (!mongoose.Types.ObjectId.isValid(deliveryBoyId)) {
-            return res.status(400).json({ message: "Invalid delivery boy ID." });
+        const { requestId, deliveryBoyId } = req.body;  // Dono parameters body se le rahe hain
+    
+        // Scrap request ko find karte hain
+        const scrapItem = await ScrapItem.findOne({ requestId });
+        if (!scrapItem) {
+          return res.status(404).json({ message: "Scrap request not found" });
         }
-
-        // Validate requestId
-        if (!/^\d+$/.test(requestId)) { // Checking if requestId is numeric
-            return res.status(400).json({ message: "Invalid request ID." });
+    
+        // Scrap item mein deliveryBoy ka field check karna
+        if (scrapItem.deliveryBoy.toString() !== deliveryBoyId) {
+          return res.status(400).json({
+            message: "This request is not assigned to the specified delivery boy.",
+          });
         }
-
-        // Use aggregation to fetch the delivery boy's details and the specific request
-        const result = await DeliveryBoy.aggregate([
-            {
-                $match: { _id: new mongoose.Types.ObjectId(deliveryBoyId) }
-            },
-            {
-                $lookup: {
-                    from: "DeliveryBoy", // Correct collection name for DeliveryRequest
-                    localField: "requests.requestId", // Assuming requests contain requestId
-                    foreignField: "requestId", // DeliveryRequest's requestId field
-                    as: "requests" // alias for matched requests
-                }
-            },
-            {
-                $addFields: {
-                    matchedRequest: {
-                        $arrayElemAt: [
-                            {
-                                $filter: {
-                                    input: "$requestDetails",
-                                    as: "request",
-                                    cond: { $eq: ["$$request.requestId", requestId] } // Matching by requestId
-                                }
-                            },
-                            0
-                        ]
-                    }
-                }
-            },
-            {
-                $project: {
-                    _id: 1,
-                    name: 1,
-                    requests: 1,
-                    matchedRequest: 1,
-                    isActive: 1,
-                    email: 1
-                }
-            }
-        ]);
-
-        // Check if the result contains data
-        if (!result || result.length === 0) {
-            return res.status(404).json({ message: "Delivery boy not found or request not found." });
-        }
-
-        const deliveryBoy = result[0];
-
-        // Check if the matchedRequest exists
-        if (!deliveryBoy.matchedRequest) {
-            return res.status(403).json({ message: "You are not authorised to access this request." });
-        }
-
-        // Send the response
-        return res.status(200).json({
-            status: 200,
-            data: {
-                deliveryBoy,
-                request: deliveryBoy.matchedRequest,
-            },
-            message: "Scrap item fetched successfully."
+    
+        // Agar delivery boy match kar gaya
+        res.status(200).json({
+          status: 200,
+          data: scrapItem,
+          message: "Request is valid and assigned to the correct delivery boy.",
         });
-    } catch (error) {
-        console.error("Error fetching scrap item:", error);
-        return res.status(500).json({
-            message: "Error fetching scrap item.",
-            error: error.message || "Internal server error"
+      } catch (error) {
+        console.error("Error validating delivery boy and request:", error);
+        res.status(500).json({
+          message: "Error validating delivery boy and request",
+          error: error.message,
         });
-    }
-};
+      }};
 
 
   

@@ -45,7 +45,6 @@ const createScrapItem = async (req, res) => {
     const requestNumber = (await ScrapItem.find({})).length + 1;
     const requestId = `${day}${month}${year}${requestNumber}`;
 
-
     const newScrapItem = new ScrapItem({
       authToken,
       scrapItems: parsedScrapItems,
@@ -64,6 +63,7 @@ const createScrapItem = async (req, res) => {
       isInstantPickUp,
     });
 
+    // **Instant Pickup Logic**
     if (isInstantPickUp && latitude && longitude) {
       const deliveryBoys = await DeliveryBoy.find({
         location: {
@@ -80,10 +80,17 @@ const createScrapItem = async (req, res) => {
       if (deliveryBoys.length > 0) {
         const assignedDeliveryBoy = deliveryBoys[0];
 
+        // Assign delivery boy details
         newScrapItem.isAssigned = true;
-        newScrapItem.name = assignedDeliveryBoy.name;
-        newScrapItem.number = assignedDeliveryBoy.number;
+        newScrapItem.deliveryBoy = assignedDeliveryBoy._id; // Set delivery boy reference
 
+
+
+        // Add the delivery boy details to the ScrapItem document
+        newScrapItem.deliveryBoyDetails = {
+          name: assignedDeliveryBoy.name,
+          number: assignedDeliveryBoy.number,
+        };
         // Update the delivery boy's requests field
         const requestDetails = {
           user: anuUser2Id, // Reference to the user who created the request
@@ -97,6 +104,7 @@ const createScrapItem = async (req, res) => {
           { new: true }
         );
 
+        // Save the scrap item with assigned delivery boy
         await newScrapItem.save();
 
         return res.status(200).json({
@@ -104,6 +112,7 @@ const createScrapItem = async (req, res) => {
           data: {
             requestId: newScrapItem.requestId,
             deliveryBoy: {
+              id: assignedDeliveryBoy._id,
               name: assignedDeliveryBoy.name || null,
               number: assignedDeliveryBoy.number || null,
             },
@@ -122,6 +131,7 @@ const createScrapItem = async (req, res) => {
       }
     }
 
+    // Save the new scrap item if no delivery boy was assigned
     await newScrapItem.save();
 
     res.status(200).json({
@@ -139,21 +149,22 @@ const createScrapItem = async (req, res) => {
 };
 
 
+
 // Controller to fetch all scrap requests based on authToken and role
 // Fetch requests based on authToken from headers
 const getRequestsByAuthTokenAndRole = async (req, res) => {
   try {
     console.log('Request Params:', req.params); // Log the entire params object
-    console.log('Full Request URL:', req.originalUrl); // Log the full URL
+    console.log('Request Body:', req.body); // Log the body
 
-    // Extract userId from the URL parameters
-    const { userId } = req.params;
+    // Extract userId from either the body or the URL parameters
+    const userId = req.params.userId || req.body.userId;
 
     console.log('Received User ID:', userId); // Debugging - Check if 'userId' is being passed correctly
 
     if (!userId) {
       return res.status(400).json({
-        message: 'User ID (anuUser2) must be provided in the URL.',
+        message: 'User ID (anuUser2) must be provided in the URL or body.',
       });
     }
 
@@ -162,7 +173,7 @@ const getRequestsByAuthTokenAndRole = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10; // Items per page, default is 10
     const skip = (page - 1) * limit;
 
-    // Fetch the scrap items associated with the given userId, matching authToken, sorted by the most recent (descending)
+    // Fetch the scrap items associated with the given userId, sorted by the most recent (descending)
     const scrapRequests = await ScrapItem.find({ anuUser2: userId })
       .skip(skip)
       .limit(limit)
@@ -174,27 +185,49 @@ const getRequestsByAuthTokenAndRole = async (req, res) => {
 
     if (!scrapRequests || scrapRequests.length === 0) {
       return res.status(404).json({
-        message: 'No requests found for the provided user ID or invalid auth token.',
+        message: 'No requests found for the provided user ID.',
       });
     }
 
-    // Process each request to replace customer data with delivery boy's info if assigned
+    // Process each request to add both customer and delivery boy details
     const updatedRequests = await Promise.all(scrapRequests.map(async (request) => {
-      if (request.deliveryBoyAssigned) {
-        // Fetch delivery boy's details (assuming delivery boy details are in a DeliveryBoy collection)
-        const deliveryBoy = await DeliveryBoy.findById(request.deliveryBoyAssigned);
+      // Adding customer details under 'customerDetails' key
+      const customerDetails = {
+        name: request.name,
+        number: request.number,
+        location: request.location,
+        pickUpDate: request.pickUpDate,
+        pickUpTime: request.pickUpTime,
+        status: request.status,
+        paymentMode: request.paymentMode,
+        isInstantPickUp: request.isInstantPickUp,
+        latitude: request.latitude,
+        longitude: request.longitude,
+        requestId: request.requestId,
+      };
+
+      request.customerDetails = customerDetails;
+
+      // If there is a delivery boy assigned, fetch the delivery boy's details
+      if (request.deliveryBoy) {
+        const deliveryBoy = await DeliveryBoy.findById(request.deliveryBoy);
 
         if (deliveryBoy) {
-          // Replace customer name, phone, etc., with delivery boy's details
-          request.name = deliveryBoy.name;
-          request.phone = deliveryBoy.phone;
-          // Clear customer details, if necessary
-          delete request.anuUser2; // Remove customer ID if needed
+          // Add delivery boy's details under 'deliveryBoyDetails'
+          request.deliveryBoyDetails = {
+            name: deliveryBoy.name,
+            number: deliveryBoy.number,
+            isVerified: deliveryBoy.isVerified,
+            isAssigned: deliveryBoy.isAssigned,
+          };
         }
       }
+
+      // Return updated request
       return request;
     }));
 
+    // Send response with both customer and delivery boy details
     res.status(200).json({
       message: 'Fetched all requests successfully.',
       data: updatedRequests,
