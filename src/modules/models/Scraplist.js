@@ -26,8 +26,8 @@ const ScrapItemSchema = new mongoose.Schema({
   
 status: {
     type: String,
-    enum: ['completed', 'cancelled', 'upcoming', 'inprogress'],
-    default: 'upcoming', // or whichever status should be default
+    enum: ['Completed', 'Rejected', 'Upcoming', 'Inprogress'],
+    default: 'Upcoming', // or whichever status should be default
   },
   paymentMode: { type: String, required: true }, // New field for payment mode
 isInstantPickUp: {

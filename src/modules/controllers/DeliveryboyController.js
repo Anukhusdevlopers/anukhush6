@@ -741,4 +741,52 @@ exports.getRequestsByDeliveryBoyId = async (req, res) => {
   }
 };
 
+exports.getAllRequestsForWholesaler = async (req, res) => {
+  try {
+    const { wholesalerId } = req.params;
+
+    // Validate that the wholesalerId is provided
+    if (!wholesalerId) {
+      return res.status(400).json({ message: "Wholesaler ID is required" });
+    }
+
+    // Find the wholesaler and populate its deliveryBoys
+    const wholesaler = await Wholesaler.findById(wholesalerId).populate('deliveryBoys', 'name number');
+    if (!wholesaler) {
+      return res.status(404).json({ message: "Wholesaler not found" });
+    }
+
+    // Get all requests for delivery boys under the wholesaler
+    const deliveryBoyIds = wholesaler.deliveryBoys.map((boy) => boy._id);
+
+    const requests = await ScrapItem.find({ deliveryBoy: { $in: deliveryBoyIds } })
+      .populate('deliveryBoy', 'name number') // Populate delivery boy details
+      .select(
+        'name image pickUpDate pickUpTime location latitude longitude requestId status paymentMode isInstantPickUp'
+      ); // Select necessary fields
+
+    // Check if there are any requests
+    if (!requests || requests.length === 0) {
+      return res.status(404).json({ message: "No requests found for this wholesaler" });
+    }
+
+    // Return requests grouped by delivery boy
+    const groupedRequests = wholesaler.deliveryBoys.map((boy) => ({
+      deliveryBoy: {
+        name: boy.name,
+        number: boy.number,
+      },
+      requests: requests.filter((req) => req.deliveryBoy._id.toString() === boy._id.toString()),
+    }));
+
+    return res.status(200).json({
+      message: "Requests retrieved successfully",
+      wholesaler: wholesaler.name,
+      groupedRequests,
+    });
+  } catch (error) {
+    console.error("Error fetching requests for wholesaler:", error);
+    return res.status(500).json({ message: "Internal Server Error", error });
+  }
+};
 

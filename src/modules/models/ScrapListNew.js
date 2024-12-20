@@ -16,6 +16,11 @@ const scrapSchema = new mongoose.Schema({
     types: [typeSchema],
     isSelected: { type: Boolean, default: false },
     image: { type: String, required: true }, // Add the image field here
+    role: { 
+        type: String, 
+        enum: ['retail', 'corporate'], 
+        required: true 
+    }, //
 });
 
 module.exports = mongoose.model('ScrapListNew1', scrapSchema);

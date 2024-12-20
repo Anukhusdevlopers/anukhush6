@@ -8,6 +8,12 @@ const wholesalerSchema = new mongoose.Schema({
   panNo: { type: String, required: true, unique: true },
   turnover: { type: Number, required: true },
   number: { type: String, required: true },
+  deliveryBoys: [{ type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryBoy' }],
+  role: {
+    type: String,
+    enum: ['junkyard', 'dumpingYard'],
+    required: true
+},
   isActive: {
     type: Boolean,
     default: true, // By default, a new delivery boy is active

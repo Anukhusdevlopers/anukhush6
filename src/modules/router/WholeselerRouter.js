@@ -1,13 +1,18 @@
 const express = require('express');
 const router = express.Router();
+const upload=require('../image-file/index');
 const { assignWholesaler, getWholesalersByAdmin,WholesalerLogin, verifyOTP,deactivateWholeseler,getwholeselerById,getProfileWholeseler,getTodaysWholesalers} = require('../controllers/WholeselereController');
 
+const { submitDeliveryForm } = require('../controllers/DeliveryBoyfromController');
 
 
-const { assignDeliveryBoy, getDeliveryBoysByWholesaler,getRequestsByDeliveryBoyId,deliveryboyLogin,getAllDeliveryBoysall,assignDeliveryBoyCureent,startDelivery,verifyOTPDeliveryboy ,verifyDeliveryOtp,getAllDeliveryBoys,getProfileDeliveryBoy,getRequestsByStatus, updateDeliveryBoyAddress,deactivateDeliveryBoy,getDeliveryBoysByWholesalerId,getTodayRequests} = require('../controllers/DeliveryboyController');
+const { assignDeliveryBoy, getDeliveryBoysByWholesaler,getAllRequestsForWholesaler,getRequestsByDeliveryBoyId,deliveryboyLogin,getAllDeliveryBoysall,assignDeliveryBoyCureent,startDelivery,verifyOTPDeliveryboy ,verifyDeliveryOtp,getAllDeliveryBoys,getProfileDeliveryBoy,getRequestsByStatus, updateDeliveryBoyAddress,deactivateDeliveryBoy,getDeliveryBoysByWholesalerId,getTodayRequests} = require('../controllers/DeliveryboyController');
 const { instantPickupController} = require('../controllers/InstantPickup');
+router.post('/delivery-boy-form-submit',upload.single('imageName'), submitDeliveryForm);
+
 router.post('/assign-current-location', assignDeliveryBoyCureent)
 router.get('/all-delivery-boy',getAllDeliveryBoysall);
+router.get('/wholesaler/requests/:wholesalerId', getAllRequestsForWholesaler);
 router.get('/requests/:deliveryBoyId', getRequestsByDeliveryBoyId);
 
 router.get('/deliveryBoy//today-requests/:deliveryBoyId', getTodayRequests);

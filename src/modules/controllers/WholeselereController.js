@@ -24,20 +24,26 @@ const OTP_EXPIRATION_TIME = 60 * 60 * 1000; // 1 hour in milliseconds
 // Assign Wholesaler by Admin
 // Assign Wholesaler by Admin
 exports.assignWholesaler = async (req, res) => {
-  const { name, address, email, aadharNo, panNo, turnover, number, assignedBy } = req.body;
+  const { name, address, email, aadharNo, panNo, turnover, number, assignedBy, role } = req.body;
 
   try {
-     // Check if the number exists in either the Customer (User) or Wholesaler model
-     const existingUser = await User.findOne({ number });
-     const existingWholesaler = await DeliveryBoy.findOne({ number });
- 
-     if (existingUser) {
-       return res.status(400).json({ error: "This number is already registered as a customer" });
-     }
- 
-     if (existingWholesaler) {
-       return res.status(400).json({ error: "This number is already registered as Deliveryboy" });
-     }
+    // Check if the number exists in either the Customer (User) or Wholesaler model
+    const existingUser = await User.findOne({ number });
+    const existingWholesaler = await DeliveryBoy.findOne({ number });
+
+    if (existingUser) {
+      return res.status(400).json({ error: "This number is already registered as a customer" });
+    }
+
+    if (existingWholesaler) {
+      return res.status(400).json({ error: "This number is already registered as DeliveryBoy" });
+    }
+
+    // Validate the role
+    if (!['junkyard', 'dumpingYard'].includes(role)) {
+      return res.status(400).json({ error: "Invalid role. Role must be 'junkyard' or 'dumpingYard'." });
+    }
+
     // Create a new wholesaler instance
     const wholesaler = new Wholesaler({
       name,
@@ -47,7 +53,8 @@ exports.assignWholesaler = async (req, res) => {
       panNo,
       turnover,
       number,
-      assignedBy
+      assignedBy,
+      role, // Assign the role here
     });
 
     // Save the wholesaler to the database
@@ -57,7 +64,7 @@ exports.assignWholesaler = async (req, res) => {
     const token = jwt.sign(
       { id: wholesaler._id, role: 'admin' }, 
       'your_secret_key', 
-      { expiresIn: '1h' }
+      { expiresIn: '7d' }
     );
 
     // Respond with the wholesaler's ID, the created wholesaler object, and the token
@@ -71,6 +78,7 @@ exports.assignWholesaler = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
+
 exports.getwholeselerById = async (req, res) => {
   const { id } = req.params;
 
@@ -87,20 +95,21 @@ exports.getwholeselerById = async (req, res) => {
 };
 
 exports.WholesalerLogin = async (req, res) => {
-  const { name, number } = req.body;
+  const { number, role } = req.body;
 
-  if (!name || !number) {
-    return res.status(400).json({ error: 'Name and number are required' });
+  if ( !number || !role) {
+    return res.status(400).json({ error: ' number, and role are required' });
   }
 
   try {
-    // Check if the wholesaler exists by number
-    const wholesaler = await Wholesaler.findOne({ number });
+    // Check if the wholesaler exists by number and role
+    const wholesaler = await Wholesaler.findOne({ number, role });
 
     if (!wholesaler) {
-      return res.status(404).json({ message: 'Wholesaler not found' });
+      return res.status(404).json({ message: 'Wholesaler not found with the provided role' });
     }
 
+   
     // Generate and store OTP
     const otp = generateOTP();
     const expirationTime = Date.now() + OTP_EXPIRATION_TIME;
@@ -128,7 +137,7 @@ exports.WholesalerLogin = async (req, res) => {
           id: wholesaler._id,
           name: wholesaler.name,
           number: wholesaler.number,
-          // Include any other wholesaler details you need here
+          role: wholesaler.role, // Include the role in the response
         },
         otp, // For testing, remove this in production
       });
@@ -143,6 +152,7 @@ exports.WholesalerLogin = async (req, res) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 // Verify OTP function (optional, for verification after OTP is received)
 exports.verifyOTP = async (req, res) => {
